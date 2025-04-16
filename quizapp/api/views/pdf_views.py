@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
 import uuid
 import os
 from django.conf import settings
@@ -15,6 +16,14 @@ if not os.path.exists(UPLOAD_DIR):
 class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
+    @swagger_auto_schema(
+        request_body=PDFUploadSerializer,
+        responses={
+            200: 'PDF uploaded successfully',
+            400: 'Bad Request',
+            500: 'Internal Server Error'
+        }
+    )
     def post(self, request):
         try:
             serializer = PDFUploadSerializer(data=request.data)

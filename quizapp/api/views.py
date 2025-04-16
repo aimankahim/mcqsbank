@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
 from langchain_google_genai import ChatGoogleGenerativeAI
 import uuid
 import os
@@ -22,8 +23,6 @@ from pydantic import BaseModel, Field
 from langchain.schema.runnable import RunnableBranch, RunnablePassthrough
 from dotenv import load_dotenv
 import asyncio
-from rest_framework import viewsets
-from rest_framework.decorators import action
 
 load_dotenv()
 
@@ -52,6 +51,14 @@ class Flashcard(BaseModel):
     flashcards: list[FlashcardItem] = Field(description="List of flashcards with questions and answers")
 
 class PDFUploadView(APIView):
+    @swagger_auto_schema(
+        request_body=PDFUploadSerializer,
+        responses={
+            200: 'PDF uploaded successfully',
+            400: 'Bad Request',
+            500: 'Internal Server Error'
+        }
+    )
     def post(self, request):
         try:
             file = request.FILES['file']
@@ -79,13 +86,15 @@ class PDFUploadView(APIView):
             )
 
 class LearningAPIView(APIView):
+
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-pro",
         temperature=0,
         max_tokens=None,
         timeout=None,
         max_retries=2,
-    )
+        # other params...
+    )    # llm = ChatOpenAI(model="gpt-4", temperature=0)
     
     async def extract_text_from_pdf(self, pdf_id):
         file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
@@ -155,6 +164,18 @@ Text to create flashcards from:
             default_chain
         )
 
+    @swagger_auto_schema(
+        request_body=PDFInputSerializer,
+        responses={
+            200: {
+                'notes': NotesResponseSerializer,
+                'quizz': QuizResponseSerializer,
+                'flashcard': FlashcardResponseSerializer
+            },
+            400: 'Bad Request',
+            500: 'Internal Server Error'
+        }
+    )
     async def post(self, request):
         serializer = PDFInputSerializer(data=request.data)
         if not serializer.is_valid():
@@ -205,6 +226,15 @@ class ChatView(APIView):
         max_retries=2,
     )
 
+    @swagger_auto_schema(
+        request_body=PDFUploadSerializer,
+        responses={
+            200: 'Chat response',
+            400: 'Bad Request',
+            404: 'PDF not found',
+            500: 'Internal Server Error'
+        }
+    )
     def post(self, request):
         try:
             message = request.data.get('message')
