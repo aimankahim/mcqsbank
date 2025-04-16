@@ -14,7 +14,7 @@ export const authService = {
   async checkUsername(username: string): Promise<boolean> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/auth/check-username/`,
+        `${API_CONFIG.baseURL}/check-username/`,
         { username }
       );
       return response.status === 200;
@@ -29,7 +29,7 @@ export const authService = {
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/auth/login/`,
+        `${API_CONFIG.baseURL}/login/`,
         { username, password }
       );
       return response.data;
@@ -41,7 +41,7 @@ export const authService = {
   async register(username: string, password: string): Promise<AuthResponse> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/auth/register/`,
+        `${API_CONFIG.baseURL}/register/`,
         { username, password }
       );
       return response.data;
@@ -69,7 +69,7 @@ export const authService = {
 
     try {
       const response = await axios.post<{ access: string }>(
-        `${API_CONFIG.baseURL}/auth/token/refresh/`,
+        `${API_CONFIG.baseURL}/token/refresh/`,
         { refresh }
       );
       if (response.data.access) {
