@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
+import { API_URL, API_CONFIG } from '@/config/api';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -7,7 +8,7 @@ interface ChatMessage {
 }
 
 class ChatService {
-  private baseURL = 'http://localhost:8000/api';
+  private baseURL = API_URL;
 
   async uploadPDF(file: File): Promise<string> {
     try {
