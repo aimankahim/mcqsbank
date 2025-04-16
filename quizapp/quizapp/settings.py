@@ -166,13 +166,13 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development! Configure properly in production
 CORS_ALLOW_CREDENTIALS = True
 
-SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'basic': {
-            'type': 'basic'
-        }
-    },
-}
+# SWAGGER_SETTINGS = {
+#     'SECURITY_DEFINITIONS': {
+#         'basic': {
+#             'type': 'basic'
+#         }
+#     },
+# }
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
