@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: quizapp-backend
+    env: python
+    buildCommand: |
+      poetry install --no-interaction --no-ansi
+      poetry run python manage.py collectstatic --no-input
+      poetry run python manage.py migrate
+    startCommand: poetry run gunicorn quizapp.wsgi:application
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: False
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false 

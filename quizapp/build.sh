@@ -2,7 +2,6 @@
 # exit on error
 set -o errexit
 
-pip install -r requirements.txt
-
-python manage.py collectstatic --no-input
-python manage.py migrate 
+poetry install --no-interaction --no-ansi
+poetry run python manage.py collectstatic --no-input
+poetry run python manage.py migrate 
