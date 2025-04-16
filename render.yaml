@@ -6,7 +6,7 @@ services:
       poetry install --no-interaction --no-ansi
       poetry run python manage.py collectstatic --no-input
       poetry run python manage.py migrate
-    startCommand: poetry run gunicorn quizapp.wsgi:application
+    startCommand: gunicorn quizapp.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: SECRET_KEY
         sync: false
