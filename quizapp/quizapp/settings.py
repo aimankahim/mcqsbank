@@ -169,7 +169,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "https://quizchat-magic.onrender.com",
     "http://quizchat-magic.onrender.com",
-    "https://mcqsbank-2.onrender.com/api"
+    "https://mcqsbank-2.onrender.com",
+    "https://mcqsbank-3.onrender.com"
 ]
 CORS_ALLOW_METHODS = [
     'DELETE',
