@@ -14,7 +14,7 @@ SECRET_KEY = 'your-secret-key-here'
 DEBUG = True
 
 # ALLOWED_HOSTS = [""]
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = ['backend-qvzn.onrender.com']
 
 # Application definition
 INSTALLED_APPS = [
