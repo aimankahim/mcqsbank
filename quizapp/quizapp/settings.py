@@ -31,6 +31,7 @@ SECRET_KEY = 'django-insecure-u*-el4bk9$g^86p=j(_ki$(w*%4l_4p)mza-#r^6zjlqo@y##d
 DEBUG = True
 ALLOWED_HOSTS = [
     'mcqsbank-2.onrender.com',
+    'backend-qvzn.onrender.com',
     'localhost',
     '127.0.0.1',
 ]
