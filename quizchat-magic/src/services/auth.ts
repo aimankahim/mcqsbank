@@ -45,7 +45,11 @@ export const authService = {
 
   async login(identifier: string, password: string): Promise<AuthResponse> {
     try {
-      console.log('Login attempt with:', { identifier, password });
+      console.log('Login attempt with:', { 
+        identifier, 
+        password: password ? '***' : undefined,
+        url: `${API_CONFIG.baseURL}/api/token/`
+      });
       
       if (!password) {
         throw new Error('Password is required');
