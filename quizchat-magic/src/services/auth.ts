@@ -45,41 +45,66 @@ export const authService = {
 
   async login(identifier: string, password: string): Promise<AuthResponse> {
     try {
+      console.log('Attempting login with:', { identifier, password });
+      
       // First try to get username from email if it looks like an email
       let username = identifier;
       if (identifier.includes('@')) {
         try {
+          console.log('Email detected, fetching username...');
           const response = await axios.post<{ username: string }>(
             `${API_CONFIG.baseURL}/api/get-username/`,
             { email: identifier }
           );
           username = response.data.username;
+          console.log('Got username:', username);
         } catch (error) {
           console.error('Failed to get username from email:', error);
           // Continue with the original identifier as username
         }
       }
 
+      console.log('Attempting login with username:', username);
       const response = await axios.post<AuthResponse>(
         `${API_CONFIG.baseURL}/api/token/`,
         { username, password }
       );
       
+      console.log('Login successful, storing tokens');
       // Store tokens
       localStorage.setItem('token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       return response.data;
     } catch (error: any) {
-      console.error('Login error details:', error.response?.data);
-      if (error.response?.data?.username) {
-        throw new Error(error.response.data.username[0]);
-      } else if (error.response?.data?.password) {
-        throw new Error(error.response.data.password[0]);
-      } else if (error.response?.data?.detail) {
-        throw new Error(error.response.data.detail);
-      } else {
-        throw new Error('Login failed');
+      console.error('Login error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        }
+      });
+
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (Array.isArray(errorData.username)) {
+          throw new Error(errorData.username[0]);
+        } else if (Array.isArray(errorData.password)) {
+          throw new Error(errorData.password[0]);
+        } else if (errorData.detail) {
+          throw new Error(errorData.detail);
+        } else if (typeof errorData === 'string') {
+          throw new Error(errorData);
+        } else if (typeof errorData === 'object') {
+          const messages = Object.entries(errorData)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
+            .join('\n');
+          throw new Error(messages);
+        }
       }
+      throw new Error('Login failed. Please check your credentials and try again.');
     }
   },
 
