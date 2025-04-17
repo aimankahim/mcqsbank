@@ -45,6 +45,8 @@ export const authService = {
 
   async login(identifier: string, password: string): Promise<AuthResponse> {
     try {
+      console.log('Login attempt with:', { identifier, password });
+      
       if (!password) {
         throw new Error('Password is required');
       }
@@ -54,14 +56,22 @@ export const authService = {
         { username: identifier, password }
       );
 
+      console.log('Login response:', response.data);
       localStorage.setItem('token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       return response.data;
     } catch (error: any) {
-      console.error('Login error:', {
+      console.error('Login error details:', {
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data,
-        message: error.message
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data,
+          headers: error.config?.headers
+        }
       });
 
       if (error.response?.data) {
