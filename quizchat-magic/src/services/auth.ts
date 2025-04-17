@@ -47,6 +47,10 @@ export const authService = {
     try {
       console.log('Attempting login with:', { identifier, password });
       
+      if (!password) {
+        throw new Error('Password is required');
+      }
+
       // First try to get username from email if it looks like an email
       let username = identifier;
       if (identifier.includes('@')) {
@@ -60,7 +64,7 @@ export const authService = {
           console.log('Got username:', username);
         } catch (error) {
           console.error('Failed to get username from email:', error);
-          // Continue with the original identifier as username
+          throw new Error('Invalid email or username');
         }
       }
 
@@ -157,6 +161,19 @@ export const authService = {
     const token = this.getToken();
     const refresh = localStorage.getItem('refresh_token');
     return !!(token && refresh);
+  },
+
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      console.log('Requesting password reset for:', email);
+      await axios.post(
+        `${API_CONFIG.baseURL}/api/password-reset/`,
+        { email }
+      );
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to request password reset');
+    }
   }
 };
 

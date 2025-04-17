@@ -80,10 +80,10 @@ const handleSubmit = async () => {
   error.value = ''
 
   try {
-    await authService.login(form)
+    await authService.login(form.username, form.password)
     router.push('/')
   } catch (err: any) {
-    error.value = err.response?.data?.detail || 'Failed to sign in'
+    error.value = err.message || 'Failed to sign in'
   } finally {
     loading.value = false
   }
