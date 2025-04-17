@@ -10,11 +10,28 @@ interface ErrorResponse {
   error: string;
 }
 
+interface ApiRoot {
+  quizzes: string;
+  questions: string;
+  flashcards: string;
+  notes: string;
+}
+
 export const authService = {
+  async getApiRoot(): Promise<ApiRoot> {
+    try {
+      const response = await axios.get<ApiRoot>(API_CONFIG.baseURL);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch API root:', error);
+      throw new Error('Failed to connect to the server');
+    }
+  },
+
   async checkUsername(username: string): Promise<boolean> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/check-username/`,
+        `${API_CONFIG.baseURL}/api/check-username/`,
         { username }
       );
       return response.status === 200;
@@ -29,11 +46,12 @@ export const authService = {
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/login/`,
+        `${API_CONFIG.baseURL}/api/login/`,
         { username, password }
       );
       return response.data;
     } catch (error: any) {
+      console.error('Login error details:', error.response?.data);
       throw new Error(error.response?.data?.error || 'Login failed');
     }
   },
@@ -41,7 +59,7 @@ export const authService = {
   async register(username: string, password: string): Promise<AuthResponse> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/register/`,
+        `${API_CONFIG.baseURL}/api/register/`,
         { username, password }
       );
       return response.data;
@@ -69,7 +87,7 @@ export const authService = {
 
     try {
       const response = await axios.post<{ access: string }>(
-        `${API_CONFIG.baseURL}/token/refresh/`,
+        `${API_CONFIG.baseURL}/api/token/refresh/`,
         { refresh }
       );
       if (response.data.access) {
@@ -84,7 +102,7 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    const token = this.getToken();
+    const token = self.getToken();
     const refresh = localStorage.getItem('refresh_token');
     return !!(token && refresh);
   }
@@ -122,7 +140,13 @@ axios.interceptors.response.use(
             }
             
             error.message = errorMessage.trim();
-            console.error('API Error:', { status: error.response.status, message: errorMessage });
+            console.error('API Error:', { 
+                status: error.response.status, 
+                message: errorMessage,
+                url: error.config?.url,
+                method: error.config?.method,
+                data: error.response?.data
+            });
         }
         return Promise.reject(error);
     }
