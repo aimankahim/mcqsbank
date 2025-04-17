@@ -15,7 +15,8 @@ DEBUG = False
 
 # ALLOWED_HOSTS = [""]
 # ALLOWED_HOSTS = ['backend-qvzn.onrender.com']
-ALLOWED_HOSTS = ['.onrender.com', 'backend-qvzn.onrender.com', 'localhost', '127.0.0.1']
+# ALLOWED_HOSTS = ['.onrender.com', 'backend-qvzn.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
