@@ -43,19 +43,43 @@ export const authService = {
     }
   },
 
-  async login(username: string, password: string): Promise<AuthResponse> {
+  async login(identifier: string, password: string): Promise<AuthResponse> {
     try {
+      // First try to get username from email if it looks like an email
+      let username = identifier;
+      if (identifier.includes('@')) {
+        try {
+          const response = await axios.post<{ username: string }>(
+            `${API_CONFIG.baseURL}/api/get-username/`,
+            { email: identifier }
+          );
+          username = response.data.username;
+        } catch (error) {
+          console.error('Failed to get username from email:', error);
+          // Continue with the original identifier as username
+        }
+      }
+
       const response = await axios.post<AuthResponse>(
         `${API_CONFIG.baseURL}/api/token/`,
         { username, password }
       );
+      
       // Store tokens
       localStorage.setItem('token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       return response.data;
     } catch (error: any) {
       console.error('Login error details:', error.response?.data);
-      throw new Error(error.response?.data?.detail || 'Login failed');
+      if (error.response?.data?.username) {
+        throw new Error(error.response.data.username[0]);
+      } else if (error.response?.data?.password) {
+        throw new Error(error.response.data.password[0]);
+      } else if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      } else {
+        throw new Error('Login failed');
+      }
     }
   },
 
