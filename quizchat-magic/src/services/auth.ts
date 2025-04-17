@@ -2,8 +2,8 @@ import axios from 'axios';
 import { API_CONFIG } from '../config/api';
 
 interface AuthResponse {
-  username: string;
-  token: string;
+  access: string;
+  refresh: string;
 }
 
 interface ErrorResponse {
@@ -46,13 +46,16 @@ export const authService = {
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
       const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/api/login/`,
+        `${API_CONFIG.baseURL}/api/token/`,
         { username, password }
       );
+      // Store tokens
+      localStorage.setItem('token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
       return response.data;
     } catch (error: any) {
       console.error('Login error details:', error.response?.data);
-      throw new Error(error.response?.data?.error || 'Login failed');
+      throw new Error(error.response?.data?.detail || 'Login failed');
     }
   },
 
@@ -102,7 +105,7 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    const token = self.getToken();
+    const token = this.getToken();
     const refresh = localStorage.getItem('refresh_token');
     return !!(token && refresh);
   }
