@@ -27,6 +27,11 @@ from api.auth import register_user, check_username, get_username_by_email
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.http import JsonResponse
+
+def test_view(request):
+    return JsonResponse({"status": "alive"})
+
 schema_view = get_schema_view(
     openapi.Info(
         title="Learning API",
@@ -41,6 +46,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path('api/test/', test_view),
+
     path('admin/', admin.site.urls),
     # Authentication endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
