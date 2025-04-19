@@ -1,19 +1,19 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'your-secret-key-here'
+# ✅ SECRET KEY from Render env
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# ✅ DEBUG mode from Render env
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+# ✅ ALLOWED HOSTS from Render env
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
+
+# ✅ API KEYS from Render env (remove OpenAI if not used)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Application definition
 INSTALLED_APPS = [
