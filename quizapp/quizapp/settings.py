@@ -29,12 +29,9 @@ SECRET_KEY = 'django-insecure-u*-el4bk9$g^86p=j(_ki$(w*%4l_4p)mza-#r^6zjlqo@y##d
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = [
-    'mcqsbank-2.onrender.com',
-    'backend-qvzn.onrender.com',
-    'localhost',
-    '127.0.0.1',
-]
+
+ALLOWED_HOSTS = []
+
 
 # Application definition
 
@@ -168,29 +165,6 @@ SIMPLE_JWT = {
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development! Configure properly in production
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://mcqsbank-3.onrender.com"
-]
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -199,12 +173,3 @@ SWAGGER_SETTINGS = {
         }
     },
 }
-
-# Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'y7hamzakhanswati@gmail.com'
-EMAIL_HOST_PASSWORD = 'sbep muwk dinz xsgx'
-DEFAULT_FROM_EMAIL = 'y7hamzakhanswati@gmail.com'

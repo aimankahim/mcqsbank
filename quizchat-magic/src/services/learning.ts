@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { API_URL, API_CONFIG } from '@/config/api';
 
 interface PDFInput {
   pdf_id: string;
@@ -47,7 +46,7 @@ interface Note {
 }
 
 class LearningService {
-  private baseURL = API_URL;
+  private baseURL = 'http://localhost:8000/api';
 
   private async makeRequest<T>(endpoint: string, data: any): Promise<T> {
     try {

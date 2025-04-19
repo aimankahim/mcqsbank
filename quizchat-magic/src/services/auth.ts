@@ -1,161 +1,189 @@
 import axios from 'axios';
-import { API_CONFIG } from '../config/api';
 
-interface AuthResponse {
-  access: string;
-  refresh: string;
+const API_URL = 'http://localhost:8000/api';
+
+export interface LoginCredentials {
+    email: string;
+    password: string;
 }
 
-interface ErrorResponse {
-  error: string;
+export interface RegisterData {
+    name: string;
+    email: string;
+    password: string;
 }
 
-interface ApiRoot {
-  quizzes: string;
-  questions: string;
-  flashcards: string;
-  notes: string;
+export interface AuthResponse {
+    access: string;
+    refresh: string;
+    user?: {
+        username: string;
+        email: string;
+    };
 }
 
-export const authService = {
-  async getApiRoot(): Promise<ApiRoot> {
-    try {
-      const response = await axios.get<ApiRoot>(API_CONFIG.baseURL);
-      return response.data;
-    } catch (error: any) {
-      console.error('Failed to fetch API root:', error);
-      throw new Error('Failed to connect to the server');
-    }
-  },
+class AuthService {
+    // Store username after registration for login
+    private static storedUsername: string | null = null;
 
-  async checkUsername(username: string): Promise<boolean> {
-    try {
-      const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/api/check-username/`,
-        { username }
-      );
-      return response.status === 200;
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        return false;
-      }
-      throw new Error(error.response?.data?.error || 'An error occurred');
-    }
-  },
-
-  async login(identifier: string, password: string): Promise<AuthResponse> {
-    try {
-      console.log('Login attempt with:', { 
-        identifier, 
-        password: password ? '***' : undefined,
-        url: `${API_CONFIG.baseURL}/api/token/`
-      });
-      
-      if (!password) {
-        throw new Error('Password is required');
-      }
-
-      const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/api/token/`,
-        { username: identifier, password }
-      );
-
-      console.log('Login response:', response.data);
-      localStorage.setItem('token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
-      return response.data;
-    } catch (error: any) {
-      console.error('Login error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          data: error.config?.data,
-          headers: error.config?.headers
+    async checkUsername(username: string): Promise<boolean> {
+        try {
+            const response = await axios.post(`${API_URL}/check-username/`, {
+                username: username
+            });
+            return response.data.exists;
+        } catch (error) {
+            console.error('Error checking username:', error);
+            return false;
         }
-      });
+    }
 
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        if (errorData.detail) {
-          throw new Error(errorData.detail);
-        } else if (errorData.non_field_errors) {
-          throw new Error(errorData.non_field_errors[0]);
-        } else if (typeof errorData === 'string') {
-          throw new Error(errorData);
+    async login(credentials: LoginCredentials): Promise<AuthResponse> {
+        console.log('Login attempt with:', { email: credentials.email });
+        let username = AuthService.storedUsername;
+        
+        // If we don't have a stored username, try to get it from email
+        if (!username) {
+            try {
+                console.log('Fetching username for email:', credentials.email);
+                // First try to get the username using email
+                const response = await axios.post(`${API_URL}/get-username/`, {
+                    email: credentials.email
+                });
+                username = response.data.username;
+                console.log('Username fetched:', username);
+            } catch (error) {
+                console.log('Failed to fetch username, using email local part');
+                // If that fails, use the email's local part as username
+                username = credentials.email.split('@')[0];
+            }
         }
-      }
-      throw new Error('Login failed. Please check your credentials and try again.');
-    }
-  },
 
-  async register(username: string, password: string): Promise<AuthResponse> {
-    try {
-      const response = await axios.post<AuthResponse>(
-        `${API_CONFIG.baseURL}/api/register/`,
-        { username, password }
-      );
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Registration failed');
-    }
-  },
+        try {
+            console.log('Attempting login with username:', username);
+            const response = await axios.post(`${API_URL}/token/`, {
+                username: username,
+                password: credentials.password,
+            });
 
-  logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('username');
-  },
-
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  },
-
-  async refreshToken(): Promise<string> {
-    const refresh = localStorage.getItem('refresh_token');
-    if (!refresh) {
-      this.logout();
-      throw new Error('No refresh token available');
+            console.log('Login response received:', { success: !!response.data.access });
+            if (response.data.access) {
+                localStorage.setItem('token', response.data.access);
+                localStorage.setItem('refresh_token', response.data.refresh);
+                // Store the username in localStorage for future logins
+                localStorage.setItem('username', username);
+                console.log('Tokens stored in localStorage');
+            }
+            return response.data;
+        } catch (error: any) {
+            console.error('Login error:', error.response?.data || error.message);
+            if (error.response?.status === 401) {
+                throw new Error('Username or password is incorrect');
+            }
+            throw error;
+        }
     }
 
-    try {
-      const response = await axios.post<{ access: string }>(
-        `${API_CONFIG.baseURL}/api/token/refresh/`,
-        { refresh }
-      );
-      if (response.data.access) {
-        localStorage.setItem('token', response.data.access);
-        return response.data.access;
-      }
-      throw new Error('Failed to refresh token');
-    } catch (error: any) {
-      this.logout();
-      throw new Error('Session expired. Please login again.');
+    async register(data: RegisterData): Promise<AuthResponse> {
+        // Create a username from the name (lowercase, no spaces)
+        const username = data.name.toLowerCase().replace(/\s+/g, '');
+        console.log('Registration attempt with username:', username);
+        
+        try {
+            // First check if username exists
+            const checkResponse = await axios.post(`${API_URL}/check-username/`, {
+                username: username
+            });
+            
+            if (checkResponse.data.exists) {
+                throw new Error(`Username "${username}" is already taken. Please try a different name.`);
+            }
+            
+            const response = await axios.post(`${API_URL}/register/`, {
+                username: username,
+                email: data.email,
+                password: data.password,
+            });
+            
+            console.log('Registration response received:', { success: !!response.data.access });
+            if (response.data.access) {
+                localStorage.setItem('token', response.data.access);
+                localStorage.setItem('refresh_token', response.data.refresh);
+                // Store the username for subsequent login
+                localStorage.setItem('username', username);
+                AuthService.storedUsername = username;
+                console.log('Registration successful, tokens stored');
+            }
+            return response.data;
+        } catch (error: any) {
+            console.error('Registration error:', error.response?.data || error.message);
+            if (error.response?.data) {
+                const errorData = error.response.data;
+                if (typeof errorData === 'object') {
+                    const errorMessages = Object.entries(errorData)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ');
+                    throw new Error(errorMessages);
+                }
+                throw new Error(errorData);
+            }
+            throw error;
+        }
     }
-  },
 
-  isAuthenticated(): boolean {
-    const token = this.getToken();
-    const refresh = localStorage.getItem('refresh_token');
-    return !!(token && refresh);
-  },
-
-  async forgotPassword(email: string): Promise<void> {
-    try {
-      console.log('Requesting password reset for:', email);
-      await axios.post(
-        `${API_CONFIG.baseURL}/api/password-reset/`,
-        { email }
-      );
-    } catch (error: any) {
-      console.error('Password reset error:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to request password reset');
+    logout(): void {
+        console.log('Logging out, clearing storage');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('email');
+        AuthService.storedUsername = null;
     }
-  }
-};
+
+    getToken(): string | null {
+        const token = localStorage.getItem('token');
+        console.log('Getting token:', { exists: !!token });
+        return token;
+    }
+
+    async refreshToken(): Promise<string> {
+        console.log('Attempting to refresh token');
+        const refresh = localStorage.getItem('refresh_token');
+        if (!refresh) {
+            console.log('No refresh token found');
+            this.logout();
+            throw new Error('No refresh token available');
+        }
+
+        try {
+            console.log('Making refresh token request');
+            const response = await axios.post(`${API_URL}/token/refresh/`, {
+                refresh,
+            });
+
+            console.log('Refresh token response received:', { success: !!response.data.access });
+            if (response.data.access) {
+                localStorage.setItem('token', response.data.access);
+                return response.data.access;
+            }
+            throw new Error('Failed to refresh token');
+        } catch (error) {
+            console.error('Token refresh error:', error);
+            this.logout();
+            throw new Error('Session expired. Please login again.');
+        }
+    }
+
+    isAuthenticated(): boolean {
+        const token = this.getToken();
+        const refresh = localStorage.getItem('refresh_token');
+        const isAuth = !!(token && refresh);
+        console.log('Checking authentication:', { isAuth, hasToken: !!token, hasRefresh: !!refresh });
+        return isAuth;
+    }
+}
+
+export const authService = new AuthService();
 
 // Add error handling interceptor
 axios.interceptors.response.use(
@@ -189,13 +217,7 @@ axios.interceptors.response.use(
             }
             
             error.message = errorMessage.trim();
-            console.error('API Error:', { 
-                status: error.response.status, 
-                message: errorMessage,
-                url: error.config?.url,
-                method: error.config?.method,
-                data: error.response?.data
-            });
+            console.error('API Error:', { status: error.response.status, message: errorMessage });
         }
         return Promise.reject(error);
     }
@@ -203,7 +225,7 @@ axios.interceptors.response.use(
 
 // Axios interceptor for automatic token refresh
 axios.interceptors.request.use(
-    config => {
+    async (config) => {
         const token = authService.getToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -211,15 +233,15 @@ axios.interceptors.request.use(
         }
         return config;
     },
-    error => {
+    (error) => {
         console.error('Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
 
 axios.interceptors.response.use(
-    response => response,
-    async error => {
+    (response) => response,
+    async (error) => {
         const originalRequest = error.config;
 
         if (error.response?.status === 401 && !originalRequest._retry) {
