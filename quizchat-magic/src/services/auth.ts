@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://mcqsbank-3.onrender.com/api';
 
 export interface LoginCredentials {
     email: string;
