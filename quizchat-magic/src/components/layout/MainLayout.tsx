@@ -24,7 +24,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation();
 
   const menuItems = [
-    { icon: <Home size={20} />, label: 'Dashboard', path: '/' },
+    { icon: <Home size={20} />, label: 'Dashboardupdated', path: '/' },
     { icon: <Upload size={20} />, label: 'Upload', path: '/upload' },
     { icon: <MessageSquare size={20} />, label: 'Chat', path: '/chat' },
     { icon: <BrainCircuit size={20} />, label: 'Flashcards', path: '/flashcards' },
