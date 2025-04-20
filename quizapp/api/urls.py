@@ -12,6 +12,8 @@ router.register(r'flashcards', FlashcardViewSet, basename='flashcard')
 router.register(r'notes', ConciseNoteViewSet, basename='note')
 
 urlpatterns = [
+    path('pdfs/', PDFUploadView.as_view(), name='pdf-list'),
+    path('pdf/<str:pdf_id>/', PDFUploadView.as_view(), name='pdf-detail'),
     path('upload-pdf/', PDFUploadView.as_view(), name='upload-pdf'),
     path('chat/upload-pdf/', ChatPDFUploadView.as_view(), name='chat-upload-pdf'),
     path('chat/', ChatView.as_view(), name='chat'),
