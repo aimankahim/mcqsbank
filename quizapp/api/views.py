@@ -85,6 +85,39 @@ class PDFUploadView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @swagger_auto_schema(
+        responses={
+            200: 'PDF deleted successfully',
+            404: 'PDF not found',
+            500: 'Internal Server Error'
+        }
+    )
+    def delete(self, request, pdf_id):
+        try:
+            pdf_doc = PDFDocument.objects.get(id=pdf_id)
+            
+            # Delete the file from storage
+            if pdf_doc.file_path and os.path.exists(pdf_doc.file_path):
+                os.remove(pdf_doc.file_path)
+            
+            # Delete the database record
+            pdf_doc.delete()
+            
+            return Response(
+                {'message': 'PDF deleted successfully'},
+                status=status.HTTP_200_OK
+            )
+        except PDFDocument.DoesNotExist:
+            return Response(
+                {'error': 'PDF not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class LearningAPIView(APIView):
 
     llm = ChatGoogleGenerativeAI(
