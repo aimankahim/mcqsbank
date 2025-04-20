@@ -124,31 +124,45 @@ def reset_password(request):
     token = request.data.get('token')
     new_password = request.data.get('new_password')
     
+    if not all([email, token, new_password]):
+        return Response(
+            {'error': 'Missing required fields'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     try:
         user = User.objects.get(email=email)
         # Verify the token is valid
-        refresh = RefreshToken(token)
-        if refresh['user_id'] != user.id:
+        try:
+            refresh = RefreshToken(token)
+            if refresh['user_id'] != user.id:
+                return Response(
+                    {'error': 'Invalid token'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
             return Response(
-                {'error': 'Invalid token'},
+                {'error': 'Invalid token format'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Set new password
-        user.set_password(new_password)
-        user.save()
-        
-        # Clear the OTP from cache
-        cache.delete(f'otp_{email}')
-        
-        return Response({'message': 'Password reset successfully'})
+        try:
+            validate_password(new_password)
+            user.set_password(new_password)
+            user.save()
+            
+            # Clear the OTP from cache
+            cache.delete(f'otp_{email}')
+            
+            return Response({'message': 'Password reset successfully'})
+        except ValidationError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     except User.DoesNotExist:
         return Response(
             {'error': 'User not found'},
             status=status.HTTP_404_NOT_FOUND
-        )
-    except Exception as e:
-        return Response(
-            {'error': 'Invalid token'},
-            status=status.HTTP_400_BAD_REQUEST
         ) 
