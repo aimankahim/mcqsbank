@@ -23,7 +23,7 @@ const ForgotPassword = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8000/api/forgot-password/', { email });
+      const response = await axios.post('https://django-based-mcq-app.onrender.com/api/forgot-password/', { email });
       if (response.data.message) {
         setStep(2);
       }
@@ -40,7 +40,7 @@ const ForgotPassword = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8000/api/verify-otp/', {
+      const response = await axios.post('https://django-based-mcq-app.onrender.com/api/verify-otp/', {
         email,
         otp
       });
@@ -67,7 +67,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      await axios.post('http://localhost:8000/api/reset-password/', {
+      await axios.post('https://django-based-mcq-app.onrender.com/api/reset-password/', {
         email,
         token: resetToken,
         new_password: newPassword
