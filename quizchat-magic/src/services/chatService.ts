@@ -7,7 +7,7 @@ interface ChatMessage {
 }
 
 class ChatService {
-  private baseURL = 'http://localhost:8000/api';
+  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
   async uploadPDF(file: File): Promise<string> {
     try {
