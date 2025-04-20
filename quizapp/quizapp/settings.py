@@ -165,8 +165,12 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True  # Only for development! Configure properly in production
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    "https://mcqsbank-frontend.onrender.com",
+]
+
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
