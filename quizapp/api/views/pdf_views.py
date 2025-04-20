@@ -7,7 +7,7 @@ import uuid
 import os
 from django.conf import settings
 from ..serializers import PDFUploadSerializer
-from .models.chat_models import PDFDocument
+from ..models.chat_models import PDFDocument
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, 'uploads')
@@ -15,6 +15,8 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 class PDFView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    
     @swagger_auto_schema(
         responses={
             200: 'List of PDFs',
