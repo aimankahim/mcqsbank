@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://mcqsbank-3.onrender.com/api';
+const API_URL = 'https://django-based-mcq-app.onrender.com/api';
 
 export interface LoginCredentials {
     email: string;
