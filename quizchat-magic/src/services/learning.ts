@@ -46,7 +46,7 @@ interface Note {
 }
 
 class LearningService {
-  private baseURL = 'http://localhost:8000/api';
+  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
   private async makeRequest<T>(endpoint: string, data: any): Promise<T> {
     try {
