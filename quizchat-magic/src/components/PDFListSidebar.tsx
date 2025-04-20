@@ -21,7 +21,7 @@ const PDFListSidebar: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/pdfs`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/pdfs/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -46,7 +46,7 @@ const PDFListSidebar: React.FC = () => {
 
   const handleDelete = async (pdfId: string) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/pdf/${pdfId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/pdfs/${pdfId}/`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
