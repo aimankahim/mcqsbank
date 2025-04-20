@@ -134,8 +134,9 @@ def reset_password(request):
         user = User.objects.get(email=email)
         # Verify the token is valid
         try:
-            refresh = RefreshToken(token)
-            if refresh['user_id'] != user.id:
+            from rest_framework_simplejwt.tokens import AccessToken
+            access_token = AccessToken(token)
+            if access_token['user_id'] != user.id:
                 return Response(
                     {'error': 'Invalid token'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -151,10 +152,6 @@ def reset_password(request):
             validate_password(new_password)
             user.set_password(new_password)
             user.save()
-            
-            # Clear the OTP from cache
-            cache.delete(f'otp_{email}')
-            
             return Response({'message': 'Password reset successfully'})
         except ValidationError as e:
             return Response(
