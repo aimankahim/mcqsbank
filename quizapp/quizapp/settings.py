@@ -212,13 +212,20 @@ SWAGGER_SETTINGS = {
 }
 
 # Email Settings
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'y7hamzakhanswati@gmail.com')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'oyte uhxj ytrz vsms')
+
+#  Email Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'mail.privateemail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'y7hamzakhanswati@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'oyte uhxj ytrz vsms')
-
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'info@iqbalai.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'mfwn-adva-pxpr-xxsb')
 # Cache settings for OTP
 CACHES = {
     'default': {
