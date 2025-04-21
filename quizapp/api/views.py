@@ -87,30 +87,6 @@ class PDFUploadView(APIView):
 
     @swagger_auto_schema(
         responses={
-            200: 'List of PDFs',
-            500: 'Internal Server Error'
-        }
-    )
-    def get(self, request):
-        try:
-            pdfs = PDFDocument.objects.all().order_by('-created_at')
-            pdf_list = [
-                {
-                    'id': pdf.id,
-                    'name': pdf.file_name,
-                    'created_at': pdf.created_at.isoformat()
-                }
-                for pdf in pdfs
-            ]
-            return Response(pdf_list, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    @swagger_auto_schema(
-        responses={
             200: 'PDF deleted successfully',
             404: 'PDF not found',
             500: 'Internal Server Error'

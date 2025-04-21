@@ -1,6 +1,4 @@
-from .pdf_views import PDFView, PDFDetailView
+from .pdf_views import PDFUploadView
 from .learning_views import LearningAPIView
-from .quiz_views import QuizViewSet, QuizQuestionViewSet, FlashcardViewSet, ConciseNoteViewSet
-from .chat_views import ChatView, PDFUploadView as ChatPDFUploadView
 
-__all__ = ['PDFView', 'PDFDetailView', 'LearningAPIView', 'QuizViewSet', 'QuizQuestionViewSet', 'FlashcardViewSet', 'ConciseNoteViewSet', 'ChatView', 'ChatPDFUploadView'] 
+__all__ = ['PDFUploadView', 'LearningAPIView'] 

@@ -14,9 +14,9 @@ UPLOAD_DIR = os.path.join(settings.BASE_DIR, 'uploads')
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-class PDFView(APIView):
+class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    
+
     @swagger_auto_schema(
         responses={
             200: 'List of PDFs',
@@ -25,19 +25,11 @@ class PDFView(APIView):
     )
     def get(self, request):
         try:
-            pdfs = PDFDocument.objects.all().order_by('-created_at')
-            pdf_list = [
-                {
-                    'id': str(pdf.id),
-                    'name': pdf.file_name,
-                    'created_at': pdf.created_at.isoformat()
-                }
-                for pdf in pdfs
-            ]
-            return Response(pdf_list, status=status.HTTP_200_OK)
+            pdfs = PDFDocument.objects.all().values('id', 'file_name', 'created_at')
+            return Response(list(pdfs), status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
-                {'error': str(e)},
+                {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -51,66 +43,40 @@ class PDFView(APIView):
     )
     def post(self, request):
         try:
-            file = request.FILES['file']
+            serializer = PDFUploadSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            file = serializer.validated_data['file']
             if not file.name.endswith('.pdf'):
                 return Response(
                     {"error": "File must be a PDF"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Create PDF document record
-            pdf_doc = PDFDocument.objects.create(
-                file_name=file.name,
-                file_path=os.path.join(settings.UPLOAD_DIR, file.name)
-            )
+            # Generate unique ID for the PDF
+            pdf_id = str(uuid.uuid4())
+            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
             
             # Save the file
-            with open(pdf_doc.file_path, 'wb+') as destination:
+            with open(file_path, 'wb+') as destination:
                 for chunk in file.chunks():
                     destination.write(chunk)
             
-            return Response({
-                'id': str(pdf_doc.id),
-                'name': pdf_doc.file_name,
-                'created_at': pdf_doc.created_at.isoformat()
-            }, status=status.HTTP_200_OK)
+            # Create PDFDocument record
+            pdf_doc = PDFDocument.objects.create(
+                id=pdf_id,
+                file_name=file.name,
+                file_path=file_path
+            )
+            
+            return Response({"pdf_id": pdf_id}, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response(
                 {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-class PDFDetailView(APIView):
-    @swagger_auto_schema(
-        responses={
-            200: 'PDF deleted successfully',
-            404: 'PDF not found',
-            500: 'Internal Server Error'
-        }
-    )
-    def delete(self, request, pdf_id):
-        try:
-            pdf_doc = PDFDocument.objects.get(id=pdf_id)
-            
-            # Delete the file from storage
-            if pdf_doc.file_path and os.path.exists(pdf_doc.file_path):
-                os.remove(pdf_doc.file_path)
-            
-            # Delete the database record
-            pdf_doc.delete()
-            
-            return Response(
-                {'message': 'PDF deleted successfully'},
-                status=status.HTTP_200_OK
-            )
-        except PDFDocument.DoesNotExist:
-            return Response(
-                {'error': 'PDF not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             ) 
