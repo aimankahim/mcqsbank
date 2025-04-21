@@ -7,7 +7,6 @@ import uuid
 import os
 from django.conf import settings
 from ..serializers import PDFUploadSerializer
-from ..models.chat_models import PDFDocument
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, 'uploads')
@@ -16,22 +15,6 @@ if not os.path.exists(UPLOAD_DIR):
 
 class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-
-    @swagger_auto_schema(
-        responses={
-            200: 'List of PDFs',
-            500: 'Internal Server Error'
-        }
-    )
-    def get(self, request):
-        try:
-            pdfs = PDFDocument.objects.all().values('id', 'file_name', 'created_at')
-            return Response(list(pdfs), status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
     @swagger_auto_schema(
         request_body=PDFUploadSerializer,
@@ -66,15 +49,47 @@ class PDFUploadView(APIView):
                 for chunk in file.chunks():
                     destination.write(chunk)
             
-            # Create PDFDocument record
-            pdf_doc = PDFDocument.objects.create(
-                id=pdf_id,
-                file_name=file.name,
-                file_path=file_path
-            )
-            
             return Response({"pdf_id": pdf_id}, status=status.HTTP_200_OK)
             
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PDFListView(APIView):
+    def get(self, request):
+        try:
+            pdfs = []
+            for filename in os.listdir(UPLOAD_DIR):
+                if filename.endswith('.pdf'):
+                    file_path = os.path.join(UPLOAD_DIR, filename)
+                    pdfs.append({
+                        'id': filename.replace('.pdf', ''),
+                        'name': filename,
+                        'size': os.path.getsize(file_path),
+                        'uploaded_at': os.path.getctime(file_path)
+                    })
+            return Response(pdfs, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def delete(self, request, pdf_id):
+        try:
+            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                return Response(
+                    {"message": "PDF deleted successfully"},
+                    status=status.HTTP_200_OK
+                )
+            return Response(
+                {"error": "PDF not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
             return Response(
                 {"error": str(e)},

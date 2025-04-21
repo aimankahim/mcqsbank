@@ -12,7 +12,7 @@ import {
   LogOut,
   Upload,
   BookOpen,
-  File
+  FileArchive
 } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -27,7 +27,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const menuItems = [
     { icon: <Home size={20} />, label: 'Dashboard', path: '/' },
     { icon: <Upload size={20} />, label: 'Upload', path: '/upload' },
-    { icon: <File size={20} />, label: 'PDFs', path: '/pdfs' },
+    { icon: <FileArchive size={20} />, label: 'PDFs', path: '/pdfs' },
     { icon: <MessageSquare size={20} />, label: 'Chat', path: '/chat' },
     { icon: <BrainCircuit size={20} />, label: 'Flashcards', path: '/flashcards' },
     { icon: <ScrollText size={20} />, label: 'Quizzes', path: '/quizzes' },
