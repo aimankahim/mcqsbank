@@ -5,10 +5,11 @@ import uuid
 class PDFDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='pdfs/')
+    content = models.BinaryField()  # Store PDF content directly in database
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
-    embedding_store = models.CharField(max_length=255, blank=True, null=True)  # Path to the vector store
+    embedding_store = models.CharField(max_length=255, blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title

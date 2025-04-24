@@ -2,25 +2,23 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 import uuid
 import os
 import logging
 from django.conf import settings
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from ..serializers import PDFUploadSerializer
+from ..models.chat_models import PDFDocument
+import io
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Create uploads directory if it doesn't exist
-UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'pdfs')
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
-    logger.info(f"Created upload directory at {UPLOAD_DIR}")
-
 class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         request_body=PDFUploadSerializer,
@@ -32,8 +30,11 @@ class PDFUploadView(APIView):
     )
     def post(self, request):
         try:
+            logger.info("Starting PDF upload process")
+            
             serializer = PDFUploadSerializer(data=request.data)
             if not serializer.is_valid():
+                logger.error(f"Invalid serializer data: {serializer.errors}")
                 return Response(
                     serializer.errors,
                     status=status.HTTP_400_BAD_REQUEST
@@ -41,54 +42,47 @@ class PDFUploadView(APIView):
 
             file = serializer.validated_data['file']
             if not file.name.endswith('.pdf'):
+                logger.error(f"Invalid file type: {file.name}")
                 return Response(
                     {"error": "File must be a PDF"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Generate unique ID for the PDF
-            pdf_id = str(uuid.uuid4())
-            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
+            # Read file content
+            file_content = file.read()
             
-            # Save the file
-            with open(file_path, 'wb+') as destination:
-                for chunk in file.chunks():
-                    destination.write(chunk)
+            # Create PDFDocument instance
+            pdf_doc = PDFDocument.objects.create(
+                title=file.name,
+                content=file_content,
+                user=request.user
+            )
             
-            logger.info(f"PDF uploaded successfully: {file_path}")
-            return Response({"pdf_id": pdf_id}, status=status.HTTP_200_OK)
+            logger.info(f"PDF saved to database with ID: {pdf_doc.id}")
+            
+            return Response({"pdf_id": str(pdf_doc.id)}, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error uploading PDF: {str(e)}")
+            logger.error(f"Error uploading PDF: {str(e)}", exc_info=True)
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class PDFListView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         try:
-            logger.info(f"Listing PDFs from directory: {UPLOAD_DIR}")
-            if not os.path.exists(UPLOAD_DIR):
-                logger.error(f"Upload directory does not exist: {UPLOAD_DIR}")
-                return Response(
-                    {"error": "Upload directory not found"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-            pdfs = []
-            for filename in os.listdir(UPLOAD_DIR):
-                if filename.endswith('.pdf'):
-                    file_path = os.path.join(UPLOAD_DIR, filename)
-                    pdfs.append({
-                        'id': filename.replace('.pdf', ''),
-                        'name': filename,
-                        'size': os.path.getsize(file_path),
-                        'uploaded_at': os.path.getctime(file_path)
-                    })
+            pdfs = PDFDocument.objects.filter(user=request.user)
+            pdf_list = [{
+                'id': str(pdf.id),
+                'name': pdf.title,
+                'uploaded_at': pdf.uploaded_at.timestamp()
+            } for pdf in pdfs]
             
-            logger.info(f"Found {len(pdfs)} PDFs")
-            return Response(pdfs, status=status.HTTP_200_OK)
+            logger.info(f"Found {len(pdf_list)} PDFs")
+            return Response(pdf_list, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error listing PDFs: {str(e)}")
             return Response(
@@ -98,15 +92,15 @@ class PDFListView(APIView):
 
     def delete(self, request, pdf_id):
         try:
-            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.info(f"PDF deleted successfully: {file_path}")
-                return Response(
-                    {"message": "PDF deleted successfully"},
-                    status=status.HTTP_200_OK
-                )
-            logger.error(f"PDF not found: {file_path}")
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user)
+            pdf.delete()
+            logger.info(f"PDF deleted successfully: {pdf_id}")
+            return Response(
+                {"message": "PDF deleted successfully"},
+                status=status.HTTP_200_OK
+            )
+        except PDFDocument.DoesNotExist:
+            logger.error(f"PDF not found: {pdf_id}")
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND
@@ -119,15 +113,21 @@ class PDFListView(APIView):
             )
 
 class PDFDownloadView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, pdf_id):
         try:
-            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
-            if os.path.exists(file_path):
-                response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
-                response['Content-Disposition'] = f'attachment; filename="{pdf_id}.pdf"'
-                logger.info(f"PDF downloaded successfully: {file_path}")
-                return response
-            logger.error(f"PDF not found for download: {file_path}")
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user)
+            
+            # Create a response with PDF content
+            response = HttpResponse(pdf.content, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{pdf.title}"'
+            
+            logger.info(f"PDF downloaded successfully: {pdf_id}")
+            return response
+            
+        except PDFDocument.DoesNotExist:
+            logger.error(f"PDF not found for download: {pdf_id}")
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND

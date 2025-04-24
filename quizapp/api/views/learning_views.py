@@ -22,8 +22,13 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 import google.generativeai as genai
 from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
 from django.utils import timezone
+import logging
+import io
+from ..models.chat_models import PDFDocument
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Configure Google Gemini API
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
@@ -62,13 +67,13 @@ class LearningAPIView(APIView):
         super().__init__(*args, **kwargs)
         try:
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash",  # Using gemini-2.0-flash model
+                model="gemini-2.0-flash",
                 temperature=0,
                 google_api_key=GOOGLE_API_KEY,
                 convert_system_message_to_human=True
             )
         except Exception as e:
-            print(f"Error initializing Gemini: {str(e)}")
+            logger.error(f"Error initializing Gemini: {str(e)}")
             raise
     
     def validate_request(self, request_data):
@@ -77,21 +82,33 @@ class LearningAPIView(APIView):
         return serializer.validated_data
     
     def extract_text_from_pdf(self, pdf_id):
-        file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"PDF file not found at path: {file_path}")
-        
         try:
-            loader = PyPDFLoader(file_path)
+            # Get PDF from database
+            pdf_doc = PDFDocument.objects.get(id=pdf_id)
+            
+            # Create a temporary file-like object
+            pdf_file = io.BytesIO(pdf_doc.content)
+            
+            logger.info(f"Loading PDF from database, ID: {pdf_id}")
+            loader = PyPDFLoader(pdf_file)
             pages = loader.load()
             
             # Combine all page contents
             text = "\n".join(page.page_content for page in pages)
             if not text.strip():
-                raise ValueError("PDF appears to be empty or contains no extractable text")
+                error_msg = "PDF appears to be empty or contains no extractable text"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+                
+            logger.info(f"Successfully extracted {len(pages)} pages from PDF")
             return text
+            
+        except PDFDocument.DoesNotExist:
+            error_msg = f"PDF not found in database: {pdf_id}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
         except Exception as e:
-            print(f"Error extracting PDF text: {str(e)}")
+            logger.error(f"Error extracting PDF text: {str(e)}", exc_info=True)
             raise
     
     def setup_chain_for_mode(self, mode):
