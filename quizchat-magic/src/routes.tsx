@@ -7,6 +7,7 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Upload from '@/pages/Upload';
 import PDFView from '@/pages/PDFView';
+import PDFManagement from '@/pages/PDFManagement';
 import Flashcards from '@/pages/Flashcards';
 import Quizzes from '@/pages/Quizzes';
 import QuizView from '@/pages/QuizView';
@@ -29,6 +30,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
       <Route path="/upload" element={<PrivateRoute element={<Upload />} />} />
+      <Route path="/pdfs" element={<PrivateRoute element={<PDFManagement />} />} />
       <Route path="/pdfs/:id" element={<PrivateRoute element={<PDFView />} />} />
       <Route path="/flashcards" element={<PrivateRoute element={<Flashcards />} />} />
       <Route path="/flashcards/:id" element={<PrivateRoute element={<FlashcardView />} />} />

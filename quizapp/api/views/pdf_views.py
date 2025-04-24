@@ -6,6 +6,7 @@ from drf_yasg.utils import swagger_auto_schema
 import uuid
 import os
 from django.conf import settings
+from django.http import FileResponse
 from ..serializers import PDFUploadSerializer
 
 # Create uploads directory if it doesn't exist
@@ -86,6 +87,24 @@ class PDFListView(APIView):
                     {"message": "PDF deleted successfully"},
                     status=status.HTTP_200_OK
                 )
+            return Response(
+                {"error": "PDF not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PDFDownloadView(APIView):
+    def get(self, request, pdf_id):
+        try:
+            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
+            if os.path.exists(file_path):
+                response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="{pdf_id}.pdf"'
+                return response
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND
