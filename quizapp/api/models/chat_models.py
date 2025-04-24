@@ -5,7 +5,7 @@ import uuid
 class PDFDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=255)
-    content = models.BinaryField()  # Store PDF content directly in database
+    content = models.BinaryField(null=False)  # Store PDF content directly in database
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
     embedding_store = models.CharField(max_length=255, blank=True, null=True)
