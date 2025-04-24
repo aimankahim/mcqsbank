@@ -10,7 +10,7 @@ from django.http import FileResponse
 from ..serializers import PDFUploadSerializer
 
 # Create uploads directory if it doesn't exist
-UPLOAD_DIR = os.path.join(settings.BASE_DIR, 'uploads')
+UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'pdfs')
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
