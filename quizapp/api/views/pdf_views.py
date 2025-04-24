@@ -5,14 +5,19 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 import uuid
 import os
+import logging
 from django.conf import settings
 from django.http import FileResponse
 from ..serializers import PDFUploadSerializer
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'pdfs')
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+    logger.info(f"Created upload directory at {UPLOAD_DIR}")
 
 class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -50,9 +55,11 @@ class PDFUploadView(APIView):
                 for chunk in file.chunks():
                     destination.write(chunk)
             
+            logger.info(f"PDF uploaded successfully: {file_path}")
             return Response({"pdf_id": pdf_id}, status=status.HTTP_200_OK)
             
         except Exception as e:
+            logger.error(f"Error uploading PDF: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -61,6 +68,14 @@ class PDFUploadView(APIView):
 class PDFListView(APIView):
     def get(self, request):
         try:
+            logger.info(f"Listing PDFs from directory: {UPLOAD_DIR}")
+            if not os.path.exists(UPLOAD_DIR):
+                logger.error(f"Upload directory does not exist: {UPLOAD_DIR}")
+                return Response(
+                    {"error": "Upload directory not found"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
             pdfs = []
             for filename in os.listdir(UPLOAD_DIR):
                 if filename.endswith('.pdf'):
@@ -71,8 +86,11 @@ class PDFListView(APIView):
                         'size': os.path.getsize(file_path),
                         'uploaded_at': os.path.getctime(file_path)
                     })
+            
+            logger.info(f"Found {len(pdfs)} PDFs")
             return Response(pdfs, status=status.HTTP_200_OK)
         except Exception as e:
+            logger.error(f"Error listing PDFs: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -83,15 +101,18 @@ class PDFListView(APIView):
             file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
             if os.path.exists(file_path):
                 os.remove(file_path)
+                logger.info(f"PDF deleted successfully: {file_path}")
                 return Response(
                     {"message": "PDF deleted successfully"},
                     status=status.HTTP_200_OK
                 )
+            logger.error(f"PDF not found: {file_path}")
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Error deleting PDF: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -104,12 +125,15 @@ class PDFDownloadView(APIView):
             if os.path.exists(file_path):
                 response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
                 response['Content-Disposition'] = f'attachment; filename="{pdf_id}.pdf"'
+                logger.info(f"PDF downloaded successfully: {file_path}")
                 return response
+            logger.error(f"PDF not found for download: {file_path}")
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Error downloading PDF: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

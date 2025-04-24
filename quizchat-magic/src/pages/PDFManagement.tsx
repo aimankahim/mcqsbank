@@ -19,7 +19,8 @@ const PDFManagement: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await axios.get<PDF[]>('/api/pdfs/');
+      const response = await axios.get<PDF[]>('https://django-based-mcq-app.onrender.com/api/pdfs/');
+      console.log('PDFs response:', response.data); // Debug log
       if (response.data) {
         setPdfs(response.data);
       }
@@ -37,7 +38,7 @@ const PDFManagement: React.FC = () => {
 
   const handleDelete = async (pdfId: string) => {
     try {
-      await axios.delete(`/api/pdfs/${pdfId}/`);
+      await axios.delete(`https://django-based-mcq-app.onrender.com/api/pdfs/${pdfId}/`);
       toast.success('PDF deleted successfully');
       fetchPDFs();
     } catch (error) {
@@ -47,7 +48,7 @@ const PDFManagement: React.FC = () => {
   };
 
   const handleDownload = (pdfId: string, name: string) => {
-    window.open(`/api/pdfs/${pdfId}/download/`, '_blank');
+    window.open(`https://django-based-mcq-app.onrender.com/api/pdfs/${pdfId}/download/`, '_blank');
   };
 
   if (loading) {
