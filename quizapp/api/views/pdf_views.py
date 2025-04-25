@@ -12,13 +12,14 @@ from django.http import FileResponse, HttpResponse
 from ..serializers import PDFUploadSerializer
 from ..models.chat_models import PDFDocument
 import io
+from .tasks import process_pdf
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 class PDFUploadView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @swagger_auto_schema(
         request_body=PDFUploadSerializer,
@@ -30,40 +31,39 @@ class PDFUploadView(APIView):
     )
     def post(self, request):
         try:
-            logger.info("Starting PDF upload process")
-            
-            serializer = PDFUploadSerializer(data=request.data)
-            if not serializer.is_valid():
-                logger.error(f"Invalid serializer data: {serializer.errors}")
+            if 'file' not in request.FILES:
                 return Response(
-                    serializer.errors,
+                    {"error": "No file provided"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            file = serializer.validated_data['file']
+            file = request.FILES['file']
             if not file.name.endswith('.pdf'):
-                logger.error(f"Invalid file type: {file.name}")
                 return Response(
-                    {"error": "File must be a PDF"},
+                    {"error": "Only PDF files are allowed"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-            # Read file content
-            file_content = file.read()
-            
+
             # Create PDFDocument instance
-            pdf_doc = PDFDocument.objects.create(
+            pdf = PDFDocument.objects.create(
+                user=request.user,
                 title=file.name,
-                content=file_content,
-                user=request.user
+                file=file,
+                processed=False
             )
-            
-            logger.info(f"PDF saved to database with ID: {pdf_doc.id}")
-            
-            return Response({"pdf_id": str(pdf_doc.id)}, status=status.HTTP_200_OK)
-            
+
+            # Start processing the PDF in the background
+            process_pdf.delay(pdf.id)
+
+            return Response({
+                "id": str(pdf.id),
+                "name": pdf.title,
+                "uploaded_at": pdf.uploaded_at.timestamp(),
+                "processed": pdf.processed
+            }, status=status.HTTP_201_CREATED)
+
         except Exception as e:
-            logger.error(f"Error uploading PDF: {str(e)}", exc_info=True)
+            logger.error(f"Error uploading PDF: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -78,7 +78,8 @@ class PDFListView(APIView):
             pdf_list = [{
                 'id': str(pdf.id),
                 'name': pdf.title,
-                'uploaded_at': pdf.uploaded_at.timestamp()
+                'uploaded_at': pdf.uploaded_at.timestamp(),
+                'processed': pdf.processed
             } for pdf in pdfs]
             
             logger.info(f"Found {len(pdf_list)} PDFs")
