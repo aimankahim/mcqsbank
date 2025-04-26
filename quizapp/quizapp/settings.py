@@ -172,9 +172,7 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# CORS Settings
-CORS_ALLOW_ALL_ORIGINS = False
-
+# CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "https://mcqs-bank-frontend.onrender.com",
     "http://localhost:3000",  # For local development

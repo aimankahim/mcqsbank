@@ -11,6 +11,8 @@ interface PDF {
   created_at: string;
 }
 
+const API_BASE_URL = 'https://mcqs-bank-backend.onrender.com'; // Update this to your actual backend URL
+
 const PDFList: React.FC = () => {
   const [pdfs, setPdfs] = useState<PDF[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,8 +24,8 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/pdfs/', {
-        credentials: 'include', // Include cookies for authentication
+      const response = await fetch(`${API_BASE_URL}/api/pdfs/`, {
+        credentials: 'include',
       });
       
       if (!response.ok) {
@@ -47,7 +49,7 @@ const PDFList: React.FC = () => {
 
   const handleDelete = async (pdfId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/pdfs/${pdfId}/`, {
+      const response = await fetch(`${API_BASE_URL}/api/pdfs/${pdfId}/`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -74,7 +76,7 @@ const PDFList: React.FC = () => {
 
   const handleDownload = async (pdfId: number, title: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/pdfs/${pdfId}/download/`, {
+      const response = await fetch(`${API_BASE_URL}/api/pdfs/${pdfId}/download/`, {
         credentials: 'include',
       });
       
