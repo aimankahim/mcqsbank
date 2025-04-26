@@ -22,14 +22,22 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch('/api/pdfs/');
-      if (!response.ok) throw new Error('Failed to fetch PDFs');
+      const response = await fetch('http://localhost:8000/api/pdfs/', {
+        credentials: 'include', // Include cookies for authentication
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch PDFs');
+      }
+      
       const data = await response.json();
       setPdfs(data);
     } catch (error) {
+      console.error('Error fetching PDFs:', error);
       toast({
         title: "Error",
-        description: "Failed to load PDFs",
+        description: error instanceof Error ? error.message : "Failed to load PDFs",
         variant: "destructive",
       });
     } finally {
@@ -39,11 +47,15 @@ const PDFList: React.FC = () => {
 
   const handleDelete = async (pdfId: number) => {
     try {
-      const response = await fetch(`/api/pdfs/${pdfId}/`, {
+      const response = await fetch(`http://localhost:8000/api/pdfs/${pdfId}/`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       
-      if (!response.ok) throw new Error('Failed to delete PDF');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete PDF');
+      }
       
       setPdfs(pdfs.filter(pdf => pdf.id !== pdfId));
       toast({
@@ -51,9 +63,10 @@ const PDFList: React.FC = () => {
         description: "PDF deleted successfully",
       });
     } catch (error) {
+      console.error('Error deleting PDF:', error);
       toast({
         title: "Error",
-        description: "Failed to delete PDF",
+        description: error instanceof Error ? error.message : "Failed to delete PDF",
         variant: "destructive",
       });
     }
@@ -61,8 +74,14 @@ const PDFList: React.FC = () => {
 
   const handleDownload = async (pdfId: number, title: string) => {
     try {
-      const response = await fetch(`/api/pdfs/${pdfId}/download/`);
-      if (!response.ok) throw new Error('Failed to download PDF');
+      const response = await fetch(`http://localhost:8000/api/pdfs/${pdfId}/download/`, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to download PDF');
+      }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -74,9 +93,10 @@ const PDFList: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
+      console.error('Error downloading PDF:', error);
       toast({
         title: "Error",
-        description: "Failed to download PDF",
+        description: error instanceof Error ? error.message : "Failed to download PDF",
         variant: "destructive",
       });
     }
