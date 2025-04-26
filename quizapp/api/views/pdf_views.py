@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from ..models import PDF
 from ..serializers import PDFUploadSerializer, PDFSerializer
 import base64
+from django.http import HttpResponse
 
 class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -70,6 +71,21 @@ class PDFDeleteView(APIView):
             pdf = PDF.objects.get(id=pdf_id, user=request.user)
             pdf.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except PDF.DoesNotExist:
+            return Response(
+                {"error": "PDF not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class PDFDownloadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pdf_id):
+        try:
+            pdf = PDF.objects.get(id=pdf_id, user=request.user)
+            response = HttpResponse(pdf.file, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{pdf.title}"'
+            return response
         except PDF.DoesNotExist:
             return Response(
                 {"error": "PDF not found"},

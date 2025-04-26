@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views.learning_views import LearningAPIView
-from .views.pdf_views import PDFUploadView
+from .views.pdf_views import PDFUploadView, PDFListView, PDFDeleteView, PDFDownloadView
 from .views.quiz_views import QuizViewSet, QuizQuestionViewSet, FlashcardViewSet, ConciseNoteViewSet
 from .views.chat_views import ChatView, PDFUploadView as ChatPDFUploadView
 
@@ -18,6 +18,10 @@ urlpatterns = [
     path('generate-notes/', LearningAPIView.as_view(), name='generate-notes'),
     path('generate-quiz/', LearningAPIView.as_view(), name='generate-quiz'),
     path('generate-flashcards/', LearningAPIView.as_view(), name='generate-flashcards'),
-    
+    path('pdfs/upload/', PDFUploadView.as_view(), name='pdf-upload'),
+    path('pdfs/', PDFListView.as_view(), name='pdf-list'),
+    path('pdfs/<int:pdf_id>/', PDFDeleteView.as_view(), name='pdf-delete'),
+    path('pdfs/<int:pdf_id>/download/', PDFDownloadView.as_view(), name='pdf-download'),
+    path('learning/', LearningAPIView.as_view(), name='learning'),
     path('', include(router.urls)),
 ] 
