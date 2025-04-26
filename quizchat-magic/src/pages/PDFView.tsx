@@ -18,6 +18,7 @@ const PDFView: React.FC = () => {
   const { toast } = useToast();
   const [pdf, setPdf] = useState<PDF | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPDF = async () => {
@@ -27,6 +28,13 @@ const PDFView: React.FC = () => {
         if (!response.ok) throw new Error('Failed to fetch PDF');
         const data = await response.json();
         setPdf(data);
+        
+        // Create a blob URL for the PDF
+        const downloadResponse = await fetch(`/api/pdfs/${id}/download/`);
+        if (!downloadResponse.ok) throw new Error('Failed to fetch PDF content');
+        const blob = await downloadResponse.blob();
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
       } catch (error) {
         console.error('Error loading PDF:', error);
         toast({
@@ -41,6 +49,13 @@ const PDFView: React.FC = () => {
     };
 
     fetchPDF();
+
+    // Clean up the blob URL when component unmounts
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
   }, [id, navigate, toast]);
 
   if (isLoading) {
@@ -113,11 +128,15 @@ const PDFView: React.FC = () => {
             <CardTitle>PDF Viewer</CardTitle>
           </CardHeader>
           <CardContent>
-            <iframe
-              src={`/api/pdfs/${id}/download/`}
-              className="w-full h-[800px] border rounded-lg"
-              title="PDF Viewer"
-            />
+            {pdfUrl && (
+              <object
+                data={pdfUrl}
+                type="application/pdf"
+                className="w-full h-[800px] border rounded-lg"
+              >
+                <p>Unable to display PDF file. <a href={pdfUrl} target="_blank" rel="noopener noreferrer">Download</a> instead.</p>
+              </object>
+            )}
           </CardContent>
         </Card>
       </div>
