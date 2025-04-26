@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ const PDFList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPDFs();
@@ -90,6 +92,10 @@ const PDFList: React.FC = () => {
     }
   };
 
+  const handleCardClick = (pdfId: number) => {
+    navigate(`/pdfs/${pdfId}`);
+  };
+
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto animate-fadeIn">
@@ -128,7 +134,11 @@ const PDFList: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pdfs.map((pdf) => (
-              <Card key={pdf.id} className="hover:shadow-md transition-shadow">
+              <Card 
+                key={pdf.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => handleCardClick(pdf.id)}
+              >
                 <CardHeader>
                   <CardTitle className="text-lg truncate">{pdf.title}</CardTitle>
                   <CardDescription>
@@ -139,7 +149,10 @@ const PDFList: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDownload(pdf.id, pdf.title)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(pdf.id, pdf.title);
+                    }}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download
@@ -147,7 +160,10 @@ const PDFList: React.FC = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDelete(pdf.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(pdf.id);
+                    }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
