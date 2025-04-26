@@ -5,30 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Brain, ScrollText, MessageSquare } from 'lucide-react';
-import { usePDF } from '@/contexts/PDFContext';
+
+interface PDF {
+  id: number;
+  title: string;
+  created_at: string;
+}
 
 const PDFView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getPDFById } = usePDF();
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdf, setPdf] = useState<PDF | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadPDF = async () => {
+    const fetchPDF = async () => {
       try {
         if (!id) return;
-        const pdf = getPDFById(id);
-        if (!pdf) {
-          toast({
-            title: 'Error',
-            description: 'PDF not found',
-            variant: 'destructive',
-          });
-          navigate('/upload');
-          return;
-        }
-        setPdfUrl(`/uploads/${id}.pdf`);
+        const response = await fetch(`/api/pdfs/${id}/`);
+        if (!response.ok) throw new Error('Failed to fetch PDF');
+        const data = await response.json();
+        setPdf(data);
       } catch (error) {
         console.error('Error loading PDF:', error);
         toast({
@@ -36,12 +34,38 @@ const PDFView: React.FC = () => {
           description: 'Failed to load PDF',
           variant: 'destructive',
         });
-        navigate('/upload');
+        navigate('/pdfs');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    loadPDF();
-  }, [id, navigate, toast, getPDFById]);
+    fetchPDF();
+  }, [id, navigate, toast]);
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!pdf) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center h-64">
+          <h2 className="text-2xl font-semibold mb-4">PDF not found</h2>
+          <Button onClick={() => navigate('/pdfs')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to PDFs
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -50,13 +74,13 @@ const PDFView: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              onClick={() => navigate('/upload')}
+              onClick={() => navigate('/pdfs')}
               className="flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Upload
+              Back to PDFs
             </Button>
-            <h1 className="text-3xl font-bold">View PDF</h1>
+            <h1 className="text-3xl font-bold">{pdf.title}</h1>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -89,13 +113,11 @@ const PDFView: React.FC = () => {
             <CardTitle>PDF Viewer</CardTitle>
           </CardHeader>
           <CardContent>
-            {pdfUrl && (
-              <iframe
-                src={pdfUrl}
-                className="w-full h-[800px] border rounded-lg"
-                title="PDF Viewer"
-              />
-            )}
+            <iframe
+              src={`/api/pdfs/${id}/download/`}
+              className="w-full h-[800px] border rounded-lg"
+              title="PDF Viewer"
+            />
           </CardContent>
         </Card>
       </div>

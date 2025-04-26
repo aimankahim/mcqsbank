@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Upload from '@/pages/Upload';
+import PDFList from '@/pages/PDFList';
 import PDFView from '@/pages/PDFView';
 import Flashcards from '@/pages/Flashcards';
 import Quizzes from '@/pages/Quizzes';
@@ -29,6 +30,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
       <Route path="/upload" element={<PrivateRoute element={<Upload />} />} />
+      <Route path="/pdfs" element={<PrivateRoute element={<PDFList />} />} />
       <Route path="/pdfs/:id" element={<PrivateRoute element={<PDFView />} />} />
       <Route path="/flashcards" element={<PrivateRoute element={<Flashcards />} />} />
       <Route path="/flashcards/:id" element={<PrivateRoute element={<FlashcardView />} />} />
