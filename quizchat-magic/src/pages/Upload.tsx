@@ -77,7 +77,18 @@ const Upload: React.FC = () => {
     }, 300);
     
     try {
-      const pdfId = await addPDF(file);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/pdfs/upload/', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload PDF');
+      }
+      
       setProgress(100);
       
       setTimeout(() => {
@@ -85,7 +96,7 @@ const Upload: React.FC = () => {
           title: "Upload successful",
           description: `${file.name} has been uploaded successfully.`,
         });
-        navigate('/');
+        navigate('/pdfs');
       }, 500);
     } catch (error) {
       toast({
