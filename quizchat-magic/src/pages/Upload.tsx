@@ -8,14 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, FileText, CheckCircle2, X, Trash2 } from 'lucide-react';
+import { FileUp, FileText, CheckCircle2, X } from 'lucide-react';
 
 const Upload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { addPDF } = usePDF();
@@ -107,43 +106,6 @@ const Upload: React.FC = () => {
     }
   };
   
-  const handleDelete = async () => {
-    if (!file) return;
-    
-    setIsDeleting(true);
-    try {
-      // Call your delete API endpoint here
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/pdf/${file.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete file');
-      }
-      
-      toast({
-        title: "File deleted",
-        description: `${file.name} has been deleted successfully.`,
-      });
-      
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    } catch (error) {
-      toast({
-        title: "Delete failed",
-        description: error instanceof Error ? error.message : "Failed to delete file",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-  
   return (
     <MainLayout>
       <div className="max-w-3xl mx-auto animate-fadeIn">
@@ -225,15 +187,6 @@ const Upload: React.FC = () => {
                       <Button variant="outline" onClick={cancelUpload}>
                         <X className="h-4 w-4 mr-2" />
                         Cancel
-                      </Button>
-
-                      <Button 
-                        variant="destructive" 
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {isDeleting ? 'Deleting...' : 'Delete'}
                       </Button>
                     </div>
                   )}

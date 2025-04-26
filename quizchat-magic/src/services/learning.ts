@@ -79,16 +79,16 @@ class LearningService {
     }
   }
 
-  async generateNotes(input: PDFInput): Promise<Note> {
-    return this.makeRequest<Note>('/generate/notes/', input);
+  async generateNotes(input: PDFInput): Promise<Notes> {
+    return this.makeRequest<Notes>('/generate-notes/', input);
   }
 
   async generateQuiz(input: PDFInput): Promise<Quiz> {
-    return this.makeRequest<Quiz>('/generate/quiz/', input);
+    return this.makeRequest<Quiz>('/generate-quiz/', input);
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {
-    return this.makeRequest<Flashcard>('/generate/flashcards/', input);
+    return this.makeRequest<Flashcard>('/generate-flashcards/', input);
   }
 
   async getRecentNotes(): Promise<any[]> {
@@ -214,9 +214,7 @@ class LearningService {
   }
 
   async generateNotesFromPDF(request: GenerateNotesRequest): Promise<GenerateNotesResponse> {
-    const response = await axios.post(`${this.baseURL}/generate/notes/`, {
-      pdf_id: request.pdf_id
-    });
+    const response = await axios.post(`${this.baseURL}/pdfs/${request.pdf_id}/notes/`, {});
     return response.data;
   }
 
