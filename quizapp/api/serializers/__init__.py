@@ -6,6 +6,13 @@ from .learning_serializers import (
     FlashcardResponseSerializer,
     NotesResponseSerializer
 )
+from .quiz_serializers import (
+    QuizSerializer, 
+    QuizQuestionSerializer, 
+    FlashcardSerializer, 
+    ConciseNoteSerializer
+)
+from .pdf_serializers import PDFSerializer
 
 __all__ = [
     'PDFUploadSerializer',
@@ -14,5 +21,9 @@ __all__ = [
     'QuizResponseSerializer',
     'FlashcardItemSerializer',
     'FlashcardResponseSerializer',
-    'NotesResponseSerializer'
+    'NotesResponseSerializer',
+    'QuizSerializer',
+    'FlashcardSerializer',
+    'ConciseNoteSerializer',
+    'PDFSerializer'
 ] 
