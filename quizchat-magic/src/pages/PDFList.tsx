@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Trash2, Download } from 'lucide-react';
+import { FileText, Trash2, Download, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PDF {
@@ -17,6 +18,7 @@ const PDFList: React.FC = () => {
   const [pdfs, setPdfs] = useState<PDF[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPDFs();
@@ -159,6 +161,14 @@ const PDFList: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardFooter className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/pdfs/${pdf.id}`)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
