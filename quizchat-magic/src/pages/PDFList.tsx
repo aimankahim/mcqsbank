@@ -11,7 +11,7 @@ interface PDF {
   created_at: string;
 }
 
-const API_BASE_URL = 'https://mcqs-bank-backend.onrender.com'; // Update this to your actual backend URL
+const API_BASE_URL = 'https://mcqs-bank-backend.onrender.com';
 
 const PDFList: React.FC = () => {
   const [pdfs, setPdfs] = useState<PDF[]>([]);
@@ -24,16 +24,26 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
+      console.log('Fetching PDFs from:', `${API_BASE_URL}/api/pdfs/`);
       const response = await fetch(`${API_BASE_URL}/api/pdfs/`, {
+        method: 'GET',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch PDFs');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || `Failed to fetch PDFs: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Fetched PDFs:', data);
       setPdfs(data);
     } catch (error) {
       console.error('Error fetching PDFs:', error);
@@ -49,14 +59,20 @@ const PDFList: React.FC = () => {
 
   const handleDelete = async (pdfId: number) => {
     try {
+      console.log('Deleting PDF:', pdfId);
       const response = await fetch(`${API_BASE_URL}/api/pdfs/${pdfId}/`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete PDF');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Delete error response:', errorData);
+        throw new Error(errorData.error || `Failed to delete PDF: ${response.status}`);
       }
       
       setPdfs(pdfs.filter(pdf => pdf.id !== pdfId));
@@ -76,13 +92,18 @@ const PDFList: React.FC = () => {
 
   const handleDownload = async (pdfId: number, title: string) => {
     try {
+      console.log('Downloading PDF:', pdfId);
       const response = await fetch(`${API_BASE_URL}/api/pdfs/${pdfId}/download/`, {
         credentials: 'include',
+        headers: {
+          'Accept': 'application/pdf',
+        },
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to download PDF');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Download error response:', errorData);
+        throw new Error(errorData.error || `Failed to download PDF: ${response.status}`);
       }
       
       const blob = await response.blob();
