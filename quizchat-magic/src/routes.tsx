@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Upload from '@/pages/Upload';
-import PDFList from '@/pages/PDFList';
 import PDFView from '@/pages/PDFView';
 import Flashcards from '@/pages/Flashcards';
 import Quizzes from '@/pages/Quizzes';
@@ -19,8 +18,8 @@ import NotFound from '@/pages/NotFound';
 import ForgotPassword from '@/pages/ForgotPassword';
 
 const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
-  const { user } = useAuth();
-  return user ? element : <Navigate to="/login" />;
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? element : <Navigate to="/login" />;
 };
 
 const AppRoutes: React.FC = () => {
@@ -30,7 +29,6 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
       <Route path="/upload" element={<PrivateRoute element={<Upload />} />} />
-      <Route path="/pdfs" element={<PrivateRoute element={<PDFList />} />} />
       <Route path="/pdfs/:id" element={<PrivateRoute element={<PDFView />} />} />
       <Route path="/flashcards" element={<PrivateRoute element={<Flashcards />} />} />
       <Route path="/flashcards/:id" element={<PrivateRoute element={<FlashcardView />} />} />
