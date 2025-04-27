@@ -7,9 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Brain, ScrollText, MessageSquare } from 'lucide-react';
 
 interface PDF {
-  id: number;
+  id: string;
   title: string;
-  created_at: string;
+  uploaded_at: string;
 }
 
 const PDFView: React.FC = () => {
@@ -24,13 +24,13 @@ const PDFView: React.FC = () => {
     const fetchPDF = async () => {
       try {
         if (!id) return;
-        const response = await fetch(`/api/pdfs/${id}/`);
+        const response = await fetch(`/api/chat/pdf/${id}/`);
         if (!response.ok) throw new Error('Failed to fetch PDF');
         const data = await response.json();
         setPdf(data);
         
         // Create a blob URL for the PDF
-        const downloadResponse = await fetch(`/api/pdfs/${id}/download/`);
+        const downloadResponse = await fetch(`/api/chat/pdf/${id}/download/`);
         if (!downloadResponse.ok) throw new Error('Failed to fetch PDF content');
         const blob = await downloadResponse.blob();
         const url = URL.createObjectURL(blob);

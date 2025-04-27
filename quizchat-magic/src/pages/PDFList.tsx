@@ -8,9 +8,9 @@ import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PDF {
-  id: number;
+  id: string;
   title: string;
-  created_at: string;
+  uploaded_at: string;
 }
 
 const PDFList: React.FC = () => {
@@ -26,7 +26,7 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch('/api/pdfs/');
+      const response = await fetch('/api/chat/pdfs/');
       if (!response.ok) throw new Error('Failed to fetch PDFs');
       const data = await response.json();
       setPdfs(data);
@@ -47,9 +47,9 @@ const PDFList: React.FC = () => {
     fetchPDFs();
   };
 
-  const handleDelete = async (pdfId: number) => {
+  const handleDelete = async (pdfId: string) => {
     try {
-      const response = await fetch(`/api/pdfs/${pdfId}/`, {
+      const response = await fetch(`/api/chat/pdf/${pdfId}/`, {
         method: 'DELETE',
       });
       
@@ -69,9 +69,9 @@ const PDFList: React.FC = () => {
     }
   };
 
-  const handleDownload = async (pdfId: number, title: string) => {
+  const handleDownload = async (pdfId: string, title: string) => {
     try {
-      const response = await fetch(`/api/pdfs/${pdfId}/download/`);
+      const response = await fetch(`/api/chat/pdf/${pdfId}/download/`);
       if (!response.ok) throw new Error('Failed to download PDF');
       
       const blob = await response.blob();
@@ -92,7 +92,7 @@ const PDFList: React.FC = () => {
     }
   };
 
-  const handleCardClick = (pdfId: number) => {
+  const handleCardClick = (pdfId: string) => {
     navigate(`/pdfs/${pdfId}`);
   };
 
@@ -142,7 +142,7 @@ const PDFList: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-lg truncate">{pdf.title}</CardTitle>
                   <CardDescription>
-                    Uploaded on {format(new Date(pdf.created_at), 'MMM d, yyyy')}
+                    Uploaded on {format(new Date(pdf.uploaded_at), 'MMM d, yyyy')}
                   </CardDescription>
                 </CardHeader>
                 <CardFooter className="flex justify-end space-x-2">

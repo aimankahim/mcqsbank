@@ -80,7 +80,7 @@ const Upload: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await fetch('/api/pdfs/upload/', {
+      const response = await fetch('/api/chat/upload-pdf/', {
         method: 'POST',
         body: formData,
       });
