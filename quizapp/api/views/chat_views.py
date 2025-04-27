@@ -8,6 +8,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 from django.core.cache import cache
+from django.http import FileResponse
 from ..models.chat_models import PDFDocument, ChatMessage
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -47,6 +48,94 @@ def get_embeddings():
         model="models/embedding-001",
         google_api_key=GOOGLE_API_KEY
     )
+
+class PDFListView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            pdfs = PDFDocument.objects.filter(processed=True).order_by('-uploaded_at')
+            data = [{
+                'id': str(pdf.id),
+                'title': pdf.title,
+                'uploaded_at': pdf.uploaded_at
+            } for pdf in pdfs]
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error listing PDFs: {str(e)}")
+            return Response(
+                {'error': 'Failed to list PDFs'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PDFDetailView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pdf_id):
+        try:
+            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            data = {
+                'id': str(pdf.id),
+                'title': pdf.title,
+                'uploaded_at': pdf.uploaded_at
+            }
+            return Response(data)
+        except PDFDocument.DoesNotExist:
+            return Response(
+                {'error': 'PDF not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error getting PDF: {str(e)}")
+            return Response(
+                {'error': 'Failed to get PDF'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PDFDownloadView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pdf_id):
+        try:
+            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            response = FileResponse(
+                pdf.file,
+                content_type='application/pdf',
+                as_attachment=True,
+                filename=pdf.title
+            )
+            return response
+        except PDFDocument.DoesNotExist:
+            return Response(
+                {'error': 'PDF not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error downloading PDF: {str(e)}")
+            return Response(
+                {'error': 'Failed to download PDF'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PDFDeleteView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pdf_id):
+        try:
+            pdf = PDFDocument.objects.get(id=pdf_id)
+            pdf.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except PDFDocument.DoesNotExist:
+            return Response(
+                {'error': 'PDF not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error deleting PDF: {str(e)}")
+            return Response(
+                {'error': 'Failed to delete PDF'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class PDFUploadView(views.APIView):
     parser_classes = (MultiPartParser, FormParser)

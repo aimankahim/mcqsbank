@@ -3,7 +3,14 @@ from rest_framework.routers import DefaultRouter
 from .views.learning_views import LearningAPIView
 from .views.pdf_views import PDFUploadView, PDFListView, PDFDeleteView, PDFDownloadView
 from .views.quiz_views import QuizViewSet, QuizQuestionViewSet, FlashcardViewSet, ConciseNoteViewSet
-from .views.chat_views import ChatView, PDFUploadView as ChatPDFUploadView
+from .views.chat_views import (
+    ChatView, 
+    PDFUploadView as ChatPDFUploadView,
+    PDFListView as ChatPDFListView,
+    PDFDetailView as ChatPDFDetailView,
+    PDFDownloadView as ChatPDFDownloadView,
+    PDFDeleteView as ChatPDFDeleteView
+)
 
 router = DefaultRouter()
 router.register(r'quizzes', QuizViewSet, basename='quiz')
@@ -14,6 +21,10 @@ router.register(r'notes', ConciseNoteViewSet, basename='note')
 urlpatterns = [
     path('upload-pdf/', PDFUploadView.as_view(), name='upload-pdf'),
     path('chat/upload-pdf/', ChatPDFUploadView.as_view(), name='chat-upload-pdf'),
+    path('chat/pdfs/', ChatPDFListView.as_view(), name='chat-pdf-list'),
+    path('chat/pdf/<uuid:pdf_id>/', ChatPDFDetailView.as_view(), name='chat-pdf-detail'),
+    path('chat/pdf/<uuid:pdf_id>/download/', ChatPDFDownloadView.as_view(), name='chat-pdf-download'),
+    path('chat/pdf/<uuid:pdf_id>/delete/', ChatPDFDeleteView.as_view(), name='chat-pdf-delete'),
     path('chat/', ChatView.as_view(), name='chat'),
     path('generate-notes/', LearningAPIView.as_view(), name='generate-notes'),
     path('generate-quiz/', LearningAPIView.as_view(), name='generate-quiz'),
