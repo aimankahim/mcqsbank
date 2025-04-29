@@ -58,7 +58,7 @@ const Quizzes: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   
-  const { pdfs } = usePDF();
+  const { pdfs, isLoading } = usePDF();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -122,7 +122,7 @@ const Quizzes: React.FC = () => {
 
   const nextQuestion = () => {
     if (!quizState) return;
-
+    
     if (quizState.currentQuestionIndex < quizState.questions.length - 1) {
       setQuizState({
         ...quizState,
@@ -138,7 +138,7 @@ const Quizzes: React.FC = () => {
 
   const prevQuestion = () => {
     if (!quizState) return;
-
+    
     if (quizState.currentQuestionIndex > 0) {
       setQuizState({
         ...quizState,
@@ -147,18 +147,9 @@ const Quizzes: React.FC = () => {
     }
   };
 
-  const submitQuiz = () => {
-    if (!quizState) return;
-
-    setQuizState({
-      ...quizState,
-      showResults: true,
-    });
-  };
-
   const resetQuiz = () => {
     if (!quizState) return;
-
+    
     setQuizState({
       ...quizState,
       currentQuestionIndex: 0,
@@ -169,12 +160,10 @@ const Quizzes: React.FC = () => {
 
   const calculateScore = () => {
     if (!quizState) return 0;
-
-    const correctAnswers = quizState.questions.reduce((count, question, index) => {
-      return count + (question.correct_answer === quizState.answers[index] ? 1 : 0);
+    
+    return quizState.answers.reduce((score, answer, index) => {
+      return answer === quizState.questions[index].correct_answer ? score + 1 : score;
     }, 0);
-
-    return Math.round((correctAnswers / quizState.questions.length) * 100);
   };
 
   return (
@@ -189,7 +178,9 @@ const Quizzes: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-2">
-            {pdfs.length > 0 ? (
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+            ) : pdfs.length > 0 ? (
               <>
                 <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
                   <SelectTrigger className="w-[250px]">
@@ -198,7 +189,7 @@ const Quizzes: React.FC = () => {
                   <SelectContent>
                     {pdfs.map((pdf) => (
                       <SelectItem key={pdf.id} value={pdf.id}>
-                        {pdf.name}
+                        {pdf.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -241,7 +232,7 @@ const Quizzes: React.FC = () => {
                     
                     <DialogFooter>
                       <Button 
-                        onClick={generateQuiz} 
+                        onClick={generateQuiz}
                         disabled={isGenerating}
                       >
                         {isGenerating ? (
@@ -298,85 +289,69 @@ const Quizzes: React.FC = () => {
                   {quizState.questions[quizState.currentQuestionIndex].question}
                 </div>
                 
-                <RadioGroup
-                  value={quizState.answers[quizState.currentQuestionIndex]}
-                  onValueChange={handleAnswer}
-                  className="space-y-3"
-                >
-                  {quizState.questions[quizState.currentQuestionIndex].options.map((option, index) => {
-                    const isCorrect = quizState.showResults && 
-                      option === quizState.questions[quizState.currentQuestionIndex].correct_answer;
-                    const isIncorrect = quizState.showResults && 
-                      option === quizState.answers[quizState.currentQuestionIndex] &&
-                      option !== quizState.questions[quizState.currentQuestionIndex].correct_answer;
-                    
-                    return (
-                      <div 
-                        key={index}
-                        className={`flex items-center space-x-2 p-3 rounded-lg border ${
-                          isCorrect ? 'border-green-500 bg-green-50' :
-                          isIncorrect ? 'border-red-500 bg-red-50' :
-                          'border-input'
-                        }`}
-                      >
-                        <RadioGroupItem 
-                          value={option} 
-                          id={`option-${index}`}
-                          disabled={quizState.showResults}
-                        />
-                        <Label 
-                          htmlFor={`option-${index}`}
-                          className="flex-1 cursor-pointer"
-                        >
-                          {option}
-                        </Label>
-                        {isCorrect && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                        {isIncorrect && <XCircle className="h-5 w-5 text-red-500" />}
+                {!quizState.showResults ? (
+                  <RadioGroup
+                    value={quizState.answers[quizState.currentQuestionIndex]}
+                    onValueChange={handleAnswer}
+                  >
+                    {quizState.questions[quizState.currentQuestionIndex].options.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option} id={`option-${index}`} />
+                        <Label htmlFor={`option-${index}`}>{option}</Label>
                       </div>
-                    );
-                  })}
-                </RadioGroup>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={prevQuestion}
-                  disabled={quizState.currentQuestionIndex === 0}
-                >
-                  Previous
-                </Button>
-                
-                {quizState.currentQuestionIndex === quizState.questions.length - 1 ? (
-                  !quizState.showResults ? (
-                    <Button onClick={submitQuiz}>
-                      Submit Quiz
-                    </Button>
-                  ) : (
-                    <div className="text-lg font-medium">
-                      Score: {calculateScore()}%
-                    </div>
-                  )
+                    ))}
+                  </RadioGroup>
                 ) : (
+                  <div className="space-y-4">
+                    <div className="text-lg font-medium">
+                      Your score: {calculateScore()} / {quizState.questions.length}
+                    </div>
+                    <div className="space-y-2">
+                      {quizState.questions.map((question, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="font-medium">{question.question}</div>
+                          <div className="flex items-center space-x-2">
+                            {quizState.answers[index] === question.correct_answer ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-red-500" />
+                            )}
+                            <span>
+                              Your answer: {quizState.answers[index] || 'Not answered'}
+                            </span>
+                          </div>
+                          {quizState.answers[index] !== question.correct_answer && (
+                            <div className="text-sm text-muted-foreground">
+                              Correct answer: {question.correct_answer}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+              {!quizState.showResults && (
+                <CardFooter className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={prevQuestion}
+                    disabled={quizState.currentQuestionIndex === 0}
+                  >
+                    Previous
+                  </Button>
                   <Button
                     onClick={nextQuestion}
                     disabled={!quizState.answers[quizState.currentQuestionIndex]}
                   >
-                    Next
+                    {quizState.currentQuestionIndex === quizState.questions.length - 1
+                      ? 'Finish'
+                      : 'Next'}
                   </Button>
-                )}
-              </CardFooter>
+                </CardFooter>
+              )}
             </Card>
           </div>
-        )}
-
-        {selectedPdfId && !quizState && !isGenerating && (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center h-[300px] space-y-4">
-              <p className="text-muted-foreground text-center">
-                Click the "Generate" button to create a quiz from your PDF
-              </p>
-            </CardContent>
-          </Card>
         )}
       </div>
     </MainLayout>

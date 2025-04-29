@@ -7,78 +7,24 @@ import { useToast } from '@/hooks/use-toast';
 import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { authService } from '@/services/auth';
+import { usePDF } from '@/contexts/PDFContext';
+import { pdfService } from '@/services/pdfService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://django-based-mcq-app.onrender.com';
 
-interface PDF {
-  id: string;
-  title: string;
-  uploaded_at: string;
-}
-
 const PDFList: React.FC = () => {
-  const [pdfs, setPdfs] = useState<PDF[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { pdfs, isLoading, refreshPDFs } = usePDF();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchPDFs();
-  }, []);
-
-  const fetchPDFs = async () => {
-    try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await fetch(`${API_URL}/api/chat/pdfs/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch PDFs');
-      const data = await response.json();
-      setPdfs(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load PDFs",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchPDFs();
+  const handleCardClick = (pdfId: string) => {
+    navigate(`/pdfs/${pdfId}`);
   };
 
   const handleDelete = async (pdfId: string) => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await fetch(`${API_URL}/api/chat/pdfs/${pdfId}/delete/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete PDF');
-      
-      setPdfs(pdfs.filter(pdf => pdf.id !== pdfId));
+      await pdfService.deletePDF(pdfId);
+      await refreshPDFs();
       toast({
         title: "Success",
         description: "PDF deleted successfully",
@@ -99,7 +45,7 @@ const PDFList: React.FC = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/download/`, {
+      const response = await fetch(`${API_URL}/api/chat/pdfs/${pdfId}/download/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -126,10 +72,6 @@ const PDFList: React.FC = () => {
     }
   };
 
-  const handleCardClick = (pdfId: string) => {
-    navigate(`/pdfs/${pdfId}`);
-  };
-
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto animate-fadeIn">
@@ -143,10 +85,10 @@ const PDFList: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
+            onClick={refreshPDFs}
+            disabled={isLoading}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>

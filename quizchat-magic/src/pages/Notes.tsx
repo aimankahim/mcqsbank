@@ -13,7 +13,7 @@ const Notes: React.FC = () => {
   const [selectedPdfId, setSelectedPdfId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notes, setNotes] = useState<string | null>(null);
-  const { pdfs } = usePDF();
+  const { pdfs, isLoading } = usePDF();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -99,18 +99,31 @@ const Notes: React.FC = () => {
             <CardContent>
               <div className="flex items-end gap-4">
                 <div className="flex-1">
-                  <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a PDF" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pdfs.map((pdf) => (
-                        <SelectItem key={pdf.id} value={pdf.id}>
-                          {pdf.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+                  ) : pdfs.length > 0 ? (
+                    <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a PDF" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pdfs.map((pdf) => (
+                          <SelectItem key={pdf.id} value={pdf.id}>
+                            {pdf.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center" 
+                      onClick={() => navigate('/upload')}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Upload PDF
+                    </Button>
+                  )}
                 </div>
 
                 <Button
@@ -138,31 +151,18 @@ const Notes: React.FC = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Generated Notes</CardTitle>
-                  <Button variant="outline" size="sm" onClick={downloadNotes}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadNotes}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap font-mono text-sm">
-                  {notes}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {!pdfs.length && (
-            <Card>
-              <CardContent className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No PDFs available</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Upload a PDF first to generate notes
-                </p>
-                <Button onClick={() => navigate('/upload')}>
-                  Upload PDF
-                </Button>
+                <div className="whitespace-pre-wrap">{notes}</div>
               </CardContent>
             </Card>
           )}

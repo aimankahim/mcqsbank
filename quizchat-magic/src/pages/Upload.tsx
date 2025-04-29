@@ -1,103 +1,69 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { usePDF } from '@/contexts/PDFContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FileUp, FileText, CheckCircle2, X } from 'lucide-react';
+import { Upload as UploadIcon } from 'lucide-react';
+import { usePDF } from '@/contexts/PDFContext';
+import { pdfService } from '@/services/pdfService';
 
 const Upload: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState<boolean>(false);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [progress, setProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { addPDF } = usePDF();
+  const [dragActive, setDragActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+  const { refreshPDFs } = usePDF();
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   };
-  
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const files = e.dataTransfer.files;
-    if (files && files[0] && files[0].type === 'application/pdf') {
-      setFile(files[0]);
-    } else {
+    if (files && files[0]) {
+      handleFile(files[0]);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      handleFile(files[0]);
+    }
+  };
+
+  const handleFile = async (file: File) => {
+    if (file.type !== 'application/pdf') {
       toast({
-        title: "Invalid file",
-        description: "Please upload a PDF file.",
+        title: "Invalid file type",
+        description: "Please upload a PDF file",
         variant: "destructive",
       });
+      return;
     }
-  };
-  
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-  
-  const handleUploadButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-  
-  const handleUpload = async () => {
-    if (!file) return;
-    
+
     setIsUploading(true);
-    setProgress(0);
-    
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + 10;
-      });
-    }, 300);
-    
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/chat/upload-pdf/', {
-        method: 'POST',
-        body: formData,
+      await pdfService.uploadPDF(file);
+      await refreshPDFs();
+      toast({
+        title: "Success",
+        description: "PDF uploaded successfully",
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload PDF');
-      }
-      
-      setProgress(100);
-      
-      setTimeout(() => {
-        toast({
-          title: "Upload successful",
-          description: `${file.name} has been uploaded successfully.`,
-        });
-        navigate('/pdfs');
-      }, 500);
+      navigate('/pdfs');
     } catch (error) {
       toast({
         title: "Upload failed",
@@ -105,18 +71,10 @@ const Upload: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      clearInterval(progressInterval);
       setIsUploading(false);
     }
   };
-  
-  const cancelUpload = () => {
-    setFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
+
   return (
     <MainLayout>
       <div className="max-w-3xl mx-auto animate-fadeIn">
@@ -153,56 +111,34 @@ const Upload: React.FC = () => {
                 onChange={handleFileInputChange}
               />
               
-              {!file ? (
-                <>
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileUp className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  
-                  <h3 className="text-lg font-medium mb-2">
-                    Drag & Drop your PDF here
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
+              <div className="space-y-4">
+                <UploadIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+                <div>
+                  <p className="text-lg font-medium">
+                    Drag and drop your PDF here
+                  </p>
+                  <p className="text-sm text-muted-foreground">
                     or click to browse files
                   </p>
-                  
-                  <Button onClick={handleUploadButtonClick}>
-                    Browse Files
-                  </Button>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto">
-                    <FileText className="h-8 w-8 text-brand-600" />
-                  </div>
-                  
-                  <h3 className="text-lg font-medium">{file.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
-                  
-                  {isUploading ? (
-                    <div className="space-y-2">
-                      <Progress value={progress} className="h-2" />
-                      <p className="text-sm text-muted-foreground">
-                        {progress === 100 ? 'Processing...' : `Uploading: ${progress}%`}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex space-x-2 justify-center">
-                      <Button onClick={handleUpload}>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Upload
-                      </Button>
-                      
-                      <Button variant="outline" onClick={cancelUpload}>
-                        <X className="h-4 w-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
                 </div>
-              )}
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <UploadIcon className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <UploadIcon className="h-4 w-4 mr-2" />
+                      Select PDF
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
           

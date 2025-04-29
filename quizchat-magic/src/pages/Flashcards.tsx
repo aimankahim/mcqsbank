@@ -61,7 +61,7 @@ const Flashcards: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [numFlashcards, setNumFlashcards] = useState<number>(5);
   
-  const { pdfs } = usePDF();
+  const { pdfs, isLoading } = usePDF();
   const { flashcards, addFlashCard, deleteFlashCard, getFlashcardsByPDF } = useLearning();
   const { toast } = useToast();
   const location = useLocation();
@@ -211,7 +211,9 @@ const Flashcards: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-2">
-            {pdfs.length > 0 ? (
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+            ) : pdfs.length > 0 ? (
               <>
                 <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
                   <SelectTrigger className="w-[250px]">
@@ -220,7 +222,7 @@ const Flashcards: React.FC = () => {
                   <SelectContent>
                     {pdfs.map((pdf) => (
                       <SelectItem key={pdf.id} value={pdf.id}>
-                        {pdf.name}
+                        {pdf.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -230,34 +232,40 @@ const Flashcards: React.FC = () => {
                   <DialogTrigger asChild>
                     <Button className="flex items-center">
                       <Wand2 className="h-4 w-4 mr-2" />
-                      Generate Flashcards
+                      Generate
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Generate Flashcards</DialogTitle>
                       <DialogDescription>
-                        Configure your flashcard generation settings
+                        Generate flashcards from your PDF content
                       </DialogDescription>
                     </DialogHeader>
                     
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="numFlashcards">Number of Flashcards</Label>
-                        <Input
-                          id="numFlashcards"
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={numFlashcards}
-                          onChange={(e) => setNumFlashcards(parseInt(e.target.value))}
-                        />
+                        <Label>Number of Flashcards</Label>
+                        <Select 
+                          value={numFlashcards.toString()} 
+                          onValueChange={(value) => setNumFlashcards(parseInt(value))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select number of flashcards" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5 flashcards</SelectItem>
+                            <SelectItem value="10">10 flashcards</SelectItem>
+                            <SelectItem value="15">15 flashcards</SelectItem>
+                            <SelectItem value="20">20 flashcards</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     
                     <DialogFooter>
                       <Button 
-                        onClick={generateFlashcards} 
+                        onClick={generateFlashcards}
                         disabled={isGenerating}
                       >
                         {isGenerating ? (
@@ -359,88 +367,75 @@ const Flashcards: React.FC = () => {
               )}
             </div>
             
-            {filteredFlashcards.length > 0 ? (
-              <>
-                <Card className="relative">
-                  <CardContent className="pt-6">
-                    <div 
-                      className={`min-h-[200px] flex items-center justify-center p-6 text-center cursor-pointer transition-transform duration-500 ${
-                        isFlipped ? 'scale-[-1]' : ''
-                      }`}
-                      onClick={handleCardFlip}
-                    >
-                      <div className={`transform ${isFlipped ? 'scale-[-1]' : ''}`}>
-                        {isFlipped 
-                          ? filteredFlashcards[activeCardIndex].back
-                          : filteredFlashcards[activeCardIndex].front
-                        }
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button
-                      variant="outline"
-                      onClick={prevCard}
-                      disabled={activeCardIndex === 0}
-                    >
-                      Previous
-                    </Button>
-                    <div className="text-sm text-muted-foreground">
-                      {activeCardIndex + 1} / {filteredFlashcards.length}
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={nextCard}
-                      disabled={activeCardIndex === filteredFlashcards.length - 1}
-                    >
-                      Next
-                    </Button>
-                  </CardFooter>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Add New Flashcard</CardTitle>
-                    <CardDescription>
-                      Create your own flashcard for this PDF
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleNewCardSubmit} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="front">Front</Label>
-                        <Input
-                          id="front"
-                          value={newCardFront}
-                          onChange={(e) => setNewCardFront(e.target.value)}
-                          placeholder="Question or term"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="back">Back</Label>
-                        <Input
-                          id="back"
-                          value={newCardBack}
-                          onChange={(e) => setNewCardBack(e.target.value)}
-                          placeholder="Answer or definition"
-                        />
-                      </div>
-                      <Button type="submit" className="w-full">
-                        Add Flashcard
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
+            {filteredFlashcards.length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center h-[300px] space-y-4">
-                  <Brain className="h-12 w-12 text-muted-foreground" />
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Brain className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No flashcards yet</h3>
                   <p className="text-muted-foreground text-center">
-                    No flashcards yet. Generate some or create your own!
+                    Create your first flashcard or generate them from your PDF
                   </p>
                 </CardContent>
               </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="relative">
+                  <CardContent className="p-6">
+                    <div 
+                      className={`transition-transform duration-500 transform ${
+                        isFlipped ? 'rotate-y-180' : ''
+                      }`}
+                      onClick={handleCardFlip}
+                    >
+                      <div className={`${isFlipped ? 'hidden' : ''}`}>
+                        <h3 className="text-lg font-medium mb-4">Front</h3>
+                        <p className="text-lg">{filteredFlashcards[activeCardIndex].front}</p>
+                      </div>
+                      <div className={`${!isFlipped ? 'hidden' : ''}`}>
+                        <h3 className="text-lg font-medium mb-4">Back</h3>
+                        <p className="text-lg">{filteredFlashcards[activeCardIndex].back}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                  
+                  {!studyMode && (
+                    <CardFooter className="flex justify-end">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteCard(activeCardIndex)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </CardFooter>
+                  )}
+                </Card>
+                
+                <div className="flex items-center justify-center space-x-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={prevCard}
+                    disabled={activeCardIndex === 0}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  
+                  <span className="text-lg font-medium">
+                    {activeCardIndex + 1} / {filteredFlashcards.length}
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={nextCard}
+                    disabled={activeCardIndex === filteredFlashcards.length - 1}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         )}
