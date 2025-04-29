@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import google.generativeai as genai
-from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote, PDFDocument
+from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
+from api.models.chat_models import PDFDocument
 from django.utils import timezone
 
 load_dotenv()
