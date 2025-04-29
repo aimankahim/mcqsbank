@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
+import { authService } from '@/services/auth';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://django-based-mcq-app.onrender.com';
 
@@ -28,7 +29,18 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/chat/pdfs/`);
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`${API_URL}/api/chat/pdfs/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (!response.ok) throw new Error('Failed to fetch PDFs');
       const data = await response.json();
       setPdfs(data);
@@ -51,8 +63,17 @@ const PDFList: React.FC = () => {
 
   const handleDelete = async (pdfId: string) => {
     try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
       const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       
       if (!response.ok) throw new Error('Failed to delete PDF');
@@ -73,7 +94,18 @@ const PDFList: React.FC = () => {
 
   const handleDownload = async (pdfId: string, title: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/download/`);
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/download/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (!response.ok) throw new Error('Failed to download PDF');
       
       const blob = await response.blob();
