@@ -269,11 +269,15 @@ Text to create flashcards from:
                     "text": text,
                     "num_flashcards": serializer.validated_data.get("num_items", 5)
                 }
-            else:
+            elif mode == "generate-quiz":
                 input_data = {
                     "text": text,
                     "num_questions": serializer.validated_data.get("num_items", 5),
                     "difficulty": serializer.validated_data.get("difficulty", "medium")
+                }
+            else:  # generate-notes
+                input_data = {
+                    "text": text
                 }
             
             # Run the chain

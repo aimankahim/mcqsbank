@@ -91,7 +91,6 @@ class LearningService {
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {
-    // Transform the input to match what the backend expects
     const transformedInput = {
       pdf_id: input.pdf_id,
       num_items: input.num_items || 5
@@ -176,7 +175,7 @@ class LearningService {
         }
       });
 
-      return response.data;
+      return response.data as Note;
     } catch (error) {
       console.error('Error fetching note:', error);
       throw error;
@@ -193,27 +192,24 @@ class LearningService {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('Uploading PDF:', file.name);
-
       const response = await axios.post(`${this.baseURL}/upload-pdf/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      console.log('Upload response:', response.data);
 
-      if (!response.data.pdf_id) {
+      const data = response.data as { pdf_id: string };
+      if (!data.pdf_id) {
         throw new Error('Invalid response from server');
       }
       
-      return response.data.pdf_id;
+      return data.pdf_id;
     } catch (error) {
       console.error('PDF upload error:', error);
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.error || 
-                           error.response?.data?.detail || 
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorMessage = (error as any).response?.data?.error || 
+                           (error as any).response?.data?.detail || 
                            'Failed to upload PDF';
         throw new Error(errorMessage);
       }
@@ -223,7 +219,7 @@ class LearningService {
 
   async generateNotesFromPDF(request: GenerateNotesRequest): Promise<GenerateNotesResponse> {
     const response = await axios.post(`${this.baseURL}/pdfs/${request.pdf_id}/notes/`, {});
-    return response.data;
+    return response.data as GenerateNotesResponse;
   }
 
   async saveNote(note: { title: string; content: string; source_text: string }): Promise<any> {
