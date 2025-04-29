@@ -95,6 +95,41 @@ class PDFService {
       throw error;
     }
   }
+
+  async downloadPDF(pdfId: string, title: string): Promise<void> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/chat/pdf/${pdfId}/download/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        responseType: 'blob'
+      });
+
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', title);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
+                           'Failed to download PDF';
+        throw new Error(errorMessage);
+      }
+      throw error;
+    }
+  }
 }
 
 export const pdfService = new PDFService();

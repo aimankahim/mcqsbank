@@ -5,6 +5,7 @@ import { PDF } from '../services/pdfService';
 interface PDFContextType {
   pdfs: PDF[];
   loading: boolean;
+  isLoading: boolean;
   error: string | null;
   refreshPDFs: () => Promise<void>;
   uploadPDF: (file: File) => Promise<string>;
@@ -65,7 +66,7 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   return (
-    <PDFContext.Provider value={{ pdfs, loading, error, refreshPDFs, uploadPDF, deletePDF }}>
+    <PDFContext.Provider value={{ pdfs, loading, isLoading: loading, error, refreshPDFs, uploadPDF, deletePDF }}>
       {children}
     </PDFContext.Provider>
   );

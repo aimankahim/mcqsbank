@@ -5,7 +5,7 @@ import uuid
 class PDFDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='pdfs/')
+    file = models.FileField(upload_to='pdfs/')  # This will now save to uploads/pdfs/
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
     embedding_store = models.CharField(max_length=255, blank=True, null=True)  # Path to the vector store

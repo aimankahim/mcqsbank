@@ -40,29 +40,7 @@ const PDFList: React.FC = () => {
 
   const handleDownload = async (pdfId: string, title: string) => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await fetch(`${API_URL}/api/chat/pdfs/${pdfId}/download/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) throw new Error('Failed to download PDF');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = title;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await pdfService.downloadPDF(pdfId, title);
     } catch (error) {
       toast({
         title: "Error",
