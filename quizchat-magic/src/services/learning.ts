@@ -4,17 +4,7 @@ import { authService } from './auth';
 interface PDFInput {
   pdf_id: string;
   num_items?: number;
-  difficulty?: 'easy' | 'medium' | 'hard';
-}
-
-interface QuizQuestion {
-  question: string;
-  options: string[];
-  correct_answer: string;
-}
-
-interface Quiz {
-  questions: QuizQuestion[];
+  difficulty?: string;
 }
 
 interface FlashcardItem {
@@ -28,6 +18,14 @@ interface Flashcard {
 
 interface Notes {
   notes: string;
+}
+
+interface Quiz {
+  questions: Array<{
+    question: string;
+    options: string[];
+    correct_answer: string;
+  }>;
 }
 
 interface GenerateNotesRequest {
@@ -45,6 +43,11 @@ interface Note {
   created_at: string;
 }
 
+// Type guard for AxiosError
+function isAxiosError(error: unknown): error is { response?: { data?: { error?: string; detail?: string } } } {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
+
 class LearningService {
   private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
@@ -55,8 +58,6 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      console.log(`Making request to ${endpoint} with data:`, data);
-      
       const response = await axios.post(`${this.baseURL}${endpoint}`, data, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -68,15 +69,13 @@ class LearningService {
         throw new Error(`Endpoint not found: ${endpoint}`);
       }
 
-      console.log(`Response from ${endpoint}:`, response.data);
-      return response.data;
+      return response.data as T;
     } catch (error) {
-      console.error(`Error in ${endpoint}:`, error);
-      if (axios.isAxiosError(error)) {
+      console.error('API Error:', error);
+      if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.error || 
                            error.response?.data?.detail || 
-                           error.message || 
-                           `Failed to make request to ${endpoint}`;
+                           'Failed to process request';
         throw new Error(errorMessage);
       }
       throw error;
@@ -84,7 +83,7 @@ class LearningService {
   }
 
   async generateNotes(input: PDFInput): Promise<Notes> {
-    return this.makeRequest<Notes>('/generate-notes/', input);
+    return this.makeRequest<Notes>('/learning/generate-notes/', input);
   }
 
   async generateQuiz(input: PDFInput): Promise<Quiz> {
@@ -92,10 +91,58 @@ class LearningService {
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {
-    return this.makeRequest<Flashcard>('/learning/generate-flashcards/', input);
+    // Transform the input to match what the backend expects
+    const transformedInput = {
+      pdf_id: input.pdf_id,
+      num_flashcards: input.num_items || 5,
+      difficulty: input.difficulty || 'medium'
+    };
+    return this.makeRequest<Flashcard>('/learning/generate-flashcards/', transformedInput);
   }
 
-  async getRecentNotes(): Promise<any[]> {
+  async getRecentQuizzes(): Promise<Quiz[]> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/quizzes/recent/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return response.data as Quiz[];
+    } catch (error) {
+      console.error('Error fetching recent quizzes:', error);
+      throw error;
+    }
+  }
+
+  async getRecentFlashcards(): Promise<Flashcard[]> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/flashcards/recent/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return response.data as Flashcard[];
+    } catch (error) {
+      console.error('Error fetching recent flashcards:', error);
+      throw error;
+    }
+  }
+
+  async getRecentNotes(): Promise<Notes[]> {
     try {
       const token = authService.getToken();
       if (!token) {
@@ -109,7 +156,7 @@ class LearningService {
         }
       });
 
-      return response.data;
+      return response.data as Notes[];
     } catch (error) {
       console.error('Error fetching recent notes:', error);
       throw error;
@@ -133,48 +180,6 @@ class LearningService {
       return response.data;
     } catch (error) {
       console.error('Error fetching note:', error);
-      throw error;
-    }
-  }
-
-  async getRecentQuizzes(): Promise<any[]> {
-    try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await axios.get(`${this.baseURL}/quizzes/recent/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching recent quizzes:', error);
-      throw error;
-    }
-  }
-
-  async getRecentFlashcards(): Promise<any[]> {
-    try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await axios.get(`${this.baseURL}/flashcards/recent/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching recent flashcards:', error);
       throw error;
     }
   }
