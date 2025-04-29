@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { pdfService } from '../services/pdfService';
 import { PDF } from '../services/pdfService';
-import { useToast } from '@/hooks/use-toast';
 
 interface PDFContextType {
   pdfs: PDF[];
@@ -18,7 +17,6 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pdfs, setPDFs] = useState<PDF[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const refreshPDFs = async () => {
     try {
@@ -28,11 +26,6 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPDFs(fetchedPDFs);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch PDFs');
-      toast({
-        title: "Error",
-        description: "Failed to fetch PDFs",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
@@ -47,11 +40,6 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return pdfId;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload PDF');
-      toast({
-        title: "Error",
-        description: "Failed to upload PDF",
-        variant: "destructive",
-      });
       throw err;
     } finally {
       setLoading(false);
@@ -66,11 +54,6 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await refreshPDFs(); // Refresh the list after successful deletion
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete PDF');
-      toast({
-        title: "Error",
-        description: "Failed to delete PDF",
-        variant: "destructive",
-      });
       throw err;
     } finally {
       setLoading(false);

@@ -5,39 +5,10 @@ export interface PDF {
   id: string;
   title: string;
   uploaded_at: string;
-  file_path?: string;
-}
-
-interface PDFUploadResponse {
-  pdf_id: string;
-  file_path: string;
-}
-
-interface PDFListResponse {
-  pdfs: PDF[];
-}
-
-interface ApiError {
-  error?: string;
-  detail?: string;
 }
 
 class PDFService {
   private baseURL = 'https://django-based-mcq-app.onrender.com/api';
-
-  private handleError(error: unknown): never {
-    console.error('API Error:', error);
-    if (typeof error === 'object' && error !== null) {
-      const apiError = error as { response?: { data?: ApiError } };
-      if (apiError.response?.data) {
-        const errorMessage = apiError.response.data.error || 
-                           apiError.response.data.detail || 
-                           'An error occurred';
-        throw new Error(errorMessage);
-      }
-    }
-    throw new Error('An unexpected error occurred');
-  }
 
   async getPDFs(): Promise<PDF[]> {
     try {
@@ -46,16 +17,23 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get<PDFListResponse>(`${this.baseURL}/chat/pdfs/`, {
+      const response = await axios.get(`${this.baseURL}/chat/pdfs/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      return response.data.pdfs;
+      return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('Error fetching PDFs:', error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
+                           'Failed to fetch PDFs';
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
   }
 
@@ -69,7 +47,7 @@ class PDFService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post<PDFUploadResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post(`${this.baseURL}/chat/upload-pdf/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -82,7 +60,14 @@ class PDFService {
 
       return response.data.pdf_id;
     } catch (error) {
-      this.handleError(error);
+      console.error('Error uploading PDF:', error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
+                           'Failed to upload PDF';
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
   }
 
@@ -93,16 +78,23 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(`${this.baseURL}/chat/pdfs/${pdfId}/`, {
+      await axios.delete(`${this.baseURL}/chat/pdfs/${pdfId}/delete/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
     } catch (error) {
-      this.handleError(error);
+      console.error('Error deleting PDF:', error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
+                           'Failed to delete PDF';
+        throw new Error(errorMessage);
+      }
+      throw error;
     }
   }
 }
 
-export const pdfService = new PDFService(); 
+export const pdfService = new PDFService();
