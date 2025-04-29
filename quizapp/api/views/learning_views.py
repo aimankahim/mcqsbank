@@ -22,6 +22,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 import google.generativeai as genai
 from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
 from django.utils import timezone
+from ..models.chat_models import PDFDocument
 
 load_dotenv()
 
@@ -77,11 +78,22 @@ class LearningAPIView(APIView):
         return serializer.validated_data
     
     def extract_text_from_pdf(self, pdf_id):
-        file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"PDF file not found at path: {file_path}")
-        
         try:
+            # Get the PDF document from the database
+            pdf_doc = PDFDocument.objects.get(id=pdf_id)
+            
+            # Check if the file exists
+            if not pdf_doc.file:
+                raise FileNotFoundError("PDF file not found in database")
+            
+            # Get the absolute file path
+            file_path = pdf_doc.file.path
+            
+            # Verify the file exists
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"PDF file not found at path: {file_path}")
+            
+            # Load and extract text from PDF
             loader = PyPDFLoader(file_path)
             pages = loader.load()
             
@@ -90,6 +102,9 @@ class LearningAPIView(APIView):
             if not text.strip():
                 raise ValueError("PDF appears to be empty or contains no extractable text")
             return text
+            
+        except PDFDocument.DoesNotExist:
+            raise FileNotFoundError(f"PDF document with ID {pdf_id} not found")
         except Exception as e:
             print(f"Error extracting PDF text: {str(e)}")
             raise
