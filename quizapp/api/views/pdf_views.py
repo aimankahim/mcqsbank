@@ -4,10 +4,10 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
-from ..models import PDF
+from ..models.chat_models import PDFDocument
 from ..serializers import PDFUploadSerializer, PDFSerializer
 import base64
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 
 class PDFUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -37,17 +37,14 @@ class PDFUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Read the file content
-            file_content = file.read()
-            
             # Create PDF record in database
-            pdf = PDF.objects.create(
+            pdf = PDFDocument.objects.create(
                 title=file.name,
-                file=file_content,
-                user=request.user
+                file=file,
+                processed=False
             )
             
-            return Response({"pdf_id": pdf.id}, status=status.HTTP_200_OK)
+            return Response({"pdf_id": str(pdf.id)}, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response(
@@ -59,19 +56,23 @@ class PDFListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        pdfs = PDF.objects.filter(user=request.user)
-        serializer = PDFSerializer(pdfs, many=True)
-        return Response(serializer.data)
+        pdfs = PDFDocument.objects.filter(processed=True).order_by('-uploaded_at')
+        data = [{
+            'id': str(pdf.id),
+            'title': pdf.title,
+            'uploaded_at': pdf.uploaded_at
+        } for pdf in pdfs]
+        return Response(data)
 
 class PDFDeleteView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pdf_id):
         try:
-            pdf = PDF.objects.get(id=pdf_id, user=request.user)
+            pdf = PDFDocument.objects.get(id=pdf_id)
             pdf.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        except PDF.DoesNotExist:
+        except PDFDocument.DoesNotExist:
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND
@@ -82,11 +83,11 @@ class PDFDownloadView(APIView):
 
     def get(self, request, pdf_id):
         try:
-            pdf = PDF.objects.get(id=pdf_id, user=request.user)
-            response = HttpResponse(pdf.file, content_type='application/pdf')
+            pdf = PDFDocument.objects.get(id=pdf_id)
+            response = FileResponse(pdf.file, content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename="{pdf.title}"'
             return response
-        except PDF.DoesNotExist:
+        except PDFDocument.DoesNotExist:
             return Response(
                 {"error": "PDF not found"},
                 status=status.HTTP_404_NOT_FOUND
