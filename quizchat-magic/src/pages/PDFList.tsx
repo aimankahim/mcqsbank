@@ -28,7 +28,7 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch(`${API_URL}/chat/pdfs/`);
+      const response = await fetch(`${API_URL}/api/chat/pdfs/`);
       if (!response.ok) throw new Error('Failed to fetch PDFs');
       const data = await response.json();
       setPdfs(data);
