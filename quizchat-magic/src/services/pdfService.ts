@@ -37,6 +37,40 @@ class PDFService {
     }
   }
 
+  async uploadPDF(file: File): Promise<string> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(`${this.baseURL}/chat/upload-pdf/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.data.pdf_id) {
+        throw new Error('Invalid response from server');
+      }
+
+      return response.data.pdf_id;
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
+                           'Failed to upload PDF';
+        throw new Error(errorMessage);
+      }
+      throw error;
+    }
+  }
+
   async deletePDF(pdfId: string): Promise<void> {
     try {
       const token = authService.getToken();

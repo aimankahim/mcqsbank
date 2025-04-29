@@ -1,34 +1,79 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { pdfService, PDF } from '@/services/pdfService';
+import { pdfService } from '../services/pdfService';
+import { PDF } from '../services/pdfService';
 import { useToast } from '@/hooks/use-toast';
 
 interface PDFContextType {
   pdfs: PDF[];
-  isLoading: boolean;
+  loading: boolean;
+  error: string | null;
   refreshPDFs: () => Promise<void>;
+  uploadPDF: (file: File) => Promise<string>;
+  deletePDF: (pdfId: string) => Promise<void>;
 }
 
 const PDFContext = createContext<PDFContextType | undefined>(undefined);
 
 export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [pdfs, setPdfs] = useState<PDF[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [pdfs, setPDFs] = useState<PDF[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const refreshPDFs = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
+      setError(null);
       const fetchedPDFs = await pdfService.getPDFs();
-      setPdfs(fetchedPDFs);
-    } catch (error) {
-      console.error('Error refreshing PDFs:', error);
+      setPDFs(fetchedPDFs);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch PDFs');
       toast({
         title: "Error",
         description: "Failed to fetch PDFs",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const uploadPDF = async (file: File): Promise<string> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const pdfId = await pdfService.uploadPDF(file);
+      await refreshPDFs(); // Refresh the list after successful upload
+      return pdfId;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload PDF');
+      toast({
+        title: "Error",
+        description: "Failed to upload PDF",
+        variant: "destructive",
+      });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePDF = async (pdfId: string): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      await pdfService.deletePDF(pdfId);
+      await refreshPDFs(); // Refresh the list after successful deletion
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete PDF');
+      toast({
+        title: "Error",
+        description: "Failed to delete PDF",
+        variant: "destructive",
+      });
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,7 +82,7 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   return (
-    <PDFContext.Provider value={{ pdfs, isLoading, refreshPDFs }}>
+    <PDFContext.Provider value={{ pdfs, loading, error, refreshPDFs, uploadPDF, deletePDF }}>
       {children}
     </PDFContext.Provider>
   );
