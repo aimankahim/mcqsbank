@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://django-based-mcq-app.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://django-based-mcq-app.onrender.com/api';
 
 interface PDF {
   id: string;
@@ -28,7 +28,7 @@ const PDFList: React.FC = () => {
 
   const fetchPDFs = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/chat/pdfs/`);
+      const response = await fetch(`${API_URL}/chat/pdfs/`);
       if (!response.ok) throw new Error('Failed to fetch PDFs');
       const data = await response.json();
       setPdfs(data);
@@ -51,7 +51,7 @@ const PDFList: React.FC = () => {
 
   const handleDelete = async (pdfId: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/`, {
+      const response = await fetch(`${API_URL}/chat/pdf/${pdfId}/`, {
         method: 'DELETE',
       });
       
@@ -73,7 +73,7 @@ const PDFList: React.FC = () => {
 
   const handleDownload = async (pdfId: string, title: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/download/`);
+      const response = await fetch(`${API_URL}/chat/pdf/${pdfId}/download/`);
       if (!response.ok) throw new Error('Failed to download PDF');
       
       const blob = await response.blob();
