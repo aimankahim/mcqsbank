@@ -94,8 +94,7 @@ class LearningService {
     // Transform the input to match what the backend expects
     const transformedInput = {
       pdf_id: input.pdf_id,
-      num_flashcards: input.num_items || 5,
-      difficulty: input.difficulty || 'medium'
+      num_items: input.num_items || 5
     };
     return this.makeRequest<Flashcard>('/learning/generate-flashcards/', transformedInput);
   }

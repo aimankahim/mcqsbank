@@ -263,12 +263,18 @@ Text to create flashcards from:
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Prepare input data
-            input_data = {
-                "text": text,
-                "num_questions": serializer.validated_data.get("num_items", 5),
-                "difficulty": serializer.validated_data.get("difficulty", "medium")
-            }
+            # Prepare input data based on mode
+            if mode == "generate-flashcards":
+                input_data = {
+                    "text": text,
+                    "num_flashcards": serializer.validated_data.get("num_items", 5)
+                }
+            else:
+                input_data = {
+                    "text": text,
+                    "num_questions": serializer.validated_data.get("num_items", 5),
+                    "difficulty": serializer.validated_data.get("difficulty", "medium")
+                }
             
             # Run the chain
             result = self.run_chain(chain, input_data)
