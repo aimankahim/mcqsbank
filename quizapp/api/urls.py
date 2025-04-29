@@ -19,20 +19,26 @@ router.register(r'flashcards', FlashcardViewSet, basename='flashcard')
 router.register(r'notes', ConciseNoteViewSet, basename='note')
 
 urlpatterns = [
-    path('upload-pdf/', PDFUploadView.as_view(), name='upload-pdf'),
+    # PDF endpoints
+    path('pdfs/upload/', PDFUploadView.as_view(), name='pdf-upload'),
+    path('pdfs/', PDFListView.as_view(), name='pdf-list'),
+    path('pdfs/<int:pdf_id>/', PDFDeleteView.as_view(), name='pdf-delete'),
+    path('pdfs/<int:pdf_id>/download/', PDFDownloadView.as_view(), name='pdf-download'),
+    
+    # Chat endpoints
     path('chat/upload-pdf/', ChatPDFUploadView.as_view(), name='chat-upload-pdf'),
     path('chat/pdfs/', ChatPDFListView.as_view(), name='chat-pdf-list'),
     path('chat/pdf/<uuid:pdf_id>/', ChatPDFDetailView.as_view(), name='chat-pdf-detail'),
     path('chat/pdf/<uuid:pdf_id>/download/', ChatPDFDownloadView.as_view(), name='chat-pdf-download'),
     path('chat/pdf/<uuid:pdf_id>/delete/', ChatPDFDeleteView.as_view(), name='chat-pdf-delete'),
     path('chat/', ChatView.as_view(), name='chat'),
+    
+    # Learning endpoints
     path('generate-notes/', LearningAPIView.as_view(), name='generate-notes'),
     path('generate-quiz/', LearningAPIView.as_view(), name='generate-quiz'),
     path('generate-flashcards/', LearningAPIView.as_view(), name='generate-flashcards'),
-    path('pdfs/upload/', PDFUploadView.as_view(), name='pdf-upload'),
-    path('pdfs/', PDFListView.as_view(), name='pdf-list'),
-    path('pdfs/<int:pdf_id>/', PDFDeleteView.as_view(), name='pdf-delete'),
-    path('pdfs/<int:pdf_id>/download/', PDFDownloadView.as_view(), name='pdf-download'),
     path('learning/', LearningAPIView.as_view(), name='learning'),
+    
+    # Router URLs
     path('', include(router.urls)),
 ] 
