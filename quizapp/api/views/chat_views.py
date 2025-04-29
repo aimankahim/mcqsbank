@@ -98,34 +98,31 @@ class PDFDownloadView(views.APIView):
     def get(self, request, pdf_id):
         try:
             pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
-            if not pdf.file:
-                raise FileNotFoundError("PDF file not found in database")
+            file_path = pdf.get_file_path()
             
-            # Get the absolute path of the file
-            file_path = pdf.file.path
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"PDF file not found at path: {file_path}")
+            if not file_path or not os.path.exists(file_path):
+                logger.error(f"PDF file not found at path: {file_path}")
+                return Response(
+                    {'error': f'PDF file not found at path: {file_path}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
             
             response = FileResponse(
-                pdf.file,
+                open(file_path, 'rb'),
                 content_type='application/pdf',
                 as_attachment=True,
                 filename=pdf.title
             )
             return response
+            
         except PDFDocument.DoesNotExist:
+            logger.error(f"PDF document not found with ID: {pdf_id}")
             return Response(
                 {'error': 'PDF not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        except FileNotFoundError as e:
-            logger.error(f"File not found error: {str(e)}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_404_NOT_FOUND
-            )
         except Exception as e:
-            logger.error(f"Error downloading PDF: {str(e)}")
+            logger.error(f"Error downloading PDF: {str(e)}", exc_info=True)
             return Response(
                 {'error': 'Failed to download PDF'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -188,28 +185,23 @@ class PDFUploadView(views.APIView):
             upload_dir = os.path.join(settings.MEDIA_ROOT, 'pdfs')
             os.makedirs(upload_dir, exist_ok=True)
             
-            # Save the PDF file and get the document instance
-            try:
-                pdf_doc = PDFDocument.objects.create(
-                    title=pdf_file.name,
-                    file=pdf_file
-                )
-                logger.info(f"PDF document created with ID: {pdf_doc.id}")
-            except Exception as e:
-                logger.error(f"Error creating PDF document: {str(e)}")
-                return Response(
-                    {'error': 'Failed to save PDF file'}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            # Generate a unique filename
+            unique_filename = f"{uuid.uuid4()}_{pdf_file.name}"
+            file_path = os.path.join(upload_dir, unique_filename)
+            
+            # Save the file
+            with open(file_path, 'wb+') as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+            
+            # Create PDF document record
+            pdf_doc = PDFDocument.objects.create(
+                title=pdf_file.name,
+                file=file_path,
+                processed=False
+            )
             
             try:
-                # Get the absolute file path
-                file_path = pdf_doc.file.path
-                logger.info(f"PDF file path: {file_path}")
-                
-                if not os.path.exists(file_path):
-                    raise Exception("PDF file not found after upload")
-                
                 # Load and split the PDF with optimized parameters
                 logger.info("Loading PDF with PyPDFLoader")
                 loader = PyPDFLoader(file_path)
@@ -217,14 +209,14 @@ class PDFUploadView(views.APIView):
                 
                 logger.info("Splitting PDF content")
                 text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=500,  # Smaller chunks for better performance
-                    chunk_overlap=50  # Reduced overlap
+                    chunk_size=500,
+                    chunk_overlap=50
                 )
                 splits = text_splitter.split_documents(documents)
 
                 # Create embeddings and store them
                 logger.info("Creating embeddings")
-                embeddings = get_embeddings()  # Use cached embeddings
+                embeddings = get_embeddings()
                 vectorstore = FAISS.from_documents(splits, embeddings)
                 
                 # Save the vector store
@@ -235,13 +227,12 @@ class PDFUploadView(views.APIView):
                 full_store_path = os.path.join(settings.MEDIA_ROOT, store_path)
                 logger.info(f"Saving vector store to: {full_store_path}")
                 
-                # Save both the index and the store
                 vectorstore.save_local(full_store_path)
                 
                 # Cache the vector store in memory
                 VECTOR_STORE_CACHE[str(pdf_doc.id)] = vectorstore
                 
-                # Store the full path in the database
+                # Update the PDF document
                 pdf_doc.embedding_store = full_store_path
                 pdf_doc.processed = True
                 pdf_doc.save()
@@ -254,7 +245,9 @@ class PDFUploadView(views.APIView):
                 
             except Exception as processing_error:
                 logger.error(f"Error processing PDF content: {str(processing_error)}", exc_info=True)
-                # Clean up the PDF document if processing fails
+                # Clean up the PDF document and file if processing fails
+                if os.path.exists(file_path):
+                    os.remove(file_path)
                 pdf_doc.delete()
                 return Response({
                     'error': str(processing_error)

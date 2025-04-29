@@ -1,12 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+import os
+from django.conf import settings
 
 def pdf_upload_path(instance, filename):
     # Generate a unique filename using UUID
     ext = filename.split('.')[-1]
-    filename = f"{instance.id}.{ext}"
-    return f'pdfs/{filename}'
+    unique_filename = f"{uuid.uuid4()}_{filename}"
+    return os.path.join('pdfs', unique_filename)
 
 class PDFDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
@@ -18,6 +20,20 @@ class PDFDocument(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_file_path(self):
+        """Get the absolute file path"""
+        if self.file:
+            return os.path.join(settings.MEDIA_ROOT, self.file.name)
+        return None
+
+    def delete(self, *args, **kwargs):
+        """Override delete to also remove the file"""
+        if self.file:
+            file_path = self.get_file_path()
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+        super().delete(*args, **kwargs)
 
     class Meta:
         ordering = ['-uploaded_at']
