@@ -98,6 +98,14 @@ class PDFDownloadView(views.APIView):
     def get(self, request, pdf_id):
         try:
             pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            if not pdf.file:
+                raise FileNotFoundError("PDF file not found in database")
+            
+            # Get the absolute path of the file
+            file_path = pdf.file.path
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"PDF file not found at path: {file_path}")
+            
             response = FileResponse(
                 pdf.file,
                 content_type='application/pdf',
@@ -108,6 +116,12 @@ class PDFDownloadView(views.APIView):
         except PDFDocument.DoesNotExist:
             return Response(
                 {'error': 'PDF not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except FileNotFoundError as e:
+            logger.error(f"File not found error: {str(e)}")
+            return Response(
+                {'error': str(e)},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:

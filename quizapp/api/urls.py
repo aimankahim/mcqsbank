@@ -34,9 +34,9 @@ urlpatterns = [
     path('chat/', ChatView.as_view(), name='chat'),
     
     # Learning endpoints
-    path('generate-notes/', LearningAPIView.as_view(), name='generate-notes'),
-    path('generate-quiz/', LearningAPIView.as_view(), name='generate-quiz'),
-    path('generate-flashcards/', LearningAPIView.as_view(), name='generate-flashcards'),
+    path('learning/generate-notes/', LearningAPIView.as_view(), name='generate-notes'),
+    path('learning/generate-quiz/', LearningAPIView.as_view(), name='generate-quiz'),
+    path('learning/generate-flashcards/', LearningAPIView.as_view(), name='generate-flashcards'),
     path('learning/', LearningAPIView.as_view(), name='learning'),
     
     # Router URLs

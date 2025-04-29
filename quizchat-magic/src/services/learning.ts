@@ -84,7 +84,7 @@ class LearningService {
   }
 
   async generateQuiz(input: PDFInput): Promise<Quiz> {
-    return this.makeRequest<Quiz>('/generate-quiz/', input);
+    return this.makeRequest<Quiz>('/learning/generate-quiz/', input);
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {
