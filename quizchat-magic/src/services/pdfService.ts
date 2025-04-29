@@ -7,6 +7,11 @@ export interface PDF {
   uploaded_at: string;
 }
 
+// Type guard for AxiosError
+function isAxiosError(error: unknown): error is { response?: { data?: { error?: string; detail?: string } } } {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
+
 class PDFService {
   private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
@@ -27,7 +32,7 @@ class PDFService {
       return response.data as PDF[];
     } catch (error) {
       console.error('Error fetching PDFs:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.error || 
                            error.response?.data?.detail || 
                            'Failed to fetch PDFs';
@@ -62,7 +67,7 @@ class PDFService {
       return data.pdf_id;
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.error || 
                            error.response?.data?.detail || 
                            'Failed to upload PDF';
@@ -87,7 +92,7 @@ class PDFService {
       });
     } catch (error) {
       console.error('Error deleting PDF:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.error || 
                            error.response?.data?.detail || 
                            'Failed to delete PDF';
@@ -112,7 +117,7 @@ class PDFService {
       });
 
       // Create a URL for the blob
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', title);
@@ -122,7 +127,7 @@ class PDFService {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      if (axios.isAxiosError(error)) {
+      if (isAxiosError(error)) {
         const errorMessage = error.response?.data?.error || 
                            error.response?.data?.detail || 
                            'Failed to download PDF';
