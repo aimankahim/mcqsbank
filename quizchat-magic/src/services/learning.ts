@@ -64,6 +64,10 @@ class LearningService {
         }
       });
 
+      if (response.status === 404) {
+        throw new Error(`Endpoint not found: ${endpoint}`);
+      }
+
       console.log(`Response from ${endpoint}:`, response.data);
       return response.data;
     } catch (error) {

@@ -237,41 +237,41 @@ Text to create flashcards from:
     )
     def post(self, request, *args, **kwargs):
         try:
-            print(f"Received request data: {request.data}")
+            # Get the mode from the URL
+            mode = request.path.strip('/').split('/')[-1]
+            print(f"Processing request for mode: {mode}")
             
-            # Validate request data
-            validated_data = self.validate_request(request.data)
+            # Validate the request data
+            serializer = PDFInputSerializer(data=request.data)
+            if not serializer.is_valid():
+                print(f"Invalid request data: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
             # Extract text from PDF
-            text = self.extract_text_from_pdf(validated_data["pdf_id"])
-            print(f"Successfully extracted text from PDF, length: {len(text)}")
+            text = self.extract_text_from_pdf(serializer.validated_data["pdf_id"])
+            if not text:
+                return Response(
+                    {"error": "Could not extract text from PDF"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
-            # Get mode from URL path and validate it
-            path_parts = request.path.strip('/').split('/')
-            mode = path_parts[-1] if path_parts else ''
-            if not mode:
-                raise ValueError("Mode not specified in URL")
-            print(f"Processing mode: {mode}")
-            
-            # Set up input data based on mode
-            input_data = {"text": text}
-            
-            if mode == "generate-quiz":
-                input_data.update({
-                    "num_questions": validated_data.get("num_items", 5),
-                    "difficulty": validated_data.get("difficulty", "medium")
-                })
-            elif mode == "generate-flashcards":
-                input_data.update({
-                    "num_flashcards": validated_data.get("num_items", 5)
-                })
-            
-            # Get the appropriate chain for the mode
+            # Setup the appropriate chain based on mode
             chain = self.setup_chain_for_mode(mode)
+            if not chain:
+                return Response(
+                    {"error": f"Invalid mode: {mode}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
-            print(f"Invoking chain with input data: {input_data}")
+            # Prepare input data
+            input_data = {
+                "text": text,
+                "num_questions": serializer.validated_data.get("num_items", 5),
+                "difficulty": serializer.validated_data.get("difficulty", "medium")
+            }
+            
+            # Run the chain
             result = self.run_chain(chain, input_data)
-            print(f"Chain result: {result}")
             
             # Save the generated content to the database
             if mode == "generate-quiz":
