@@ -4,7 +4,8 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Brain, ScrollText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Brain, ScrollText, MessageSquare, Trash2, Download } from 'lucide-react';
+import { pdfService } from '@/services/pdfService';
 
 interface PDF {
   id: string;
@@ -24,17 +25,13 @@ const PDFView: React.FC = () => {
     const fetchPDF = async () => {
       try {
         if (!id) return;
-        const response = await fetch(`/api/chat/pdf/${id}/`);
-        if (!response.ok) throw new Error('Failed to fetch PDF');
-        const data = await response.json();
-        setPdf(data);
+        const pdfs = await pdfService.getPDFs();
+        const currentPdf = pdfs.find(p => p.id === id);
+        if (!currentPdf) throw new Error('PDF not found');
+        setPdf(currentPdf);
         
         // Create a blob URL for the PDF
-        const downloadResponse = await fetch(`/api/chat/pdf/${id}/download/`);
-        if (!downloadResponse.ok) throw new Error('Failed to fetch PDF content');
-        const blob = await downloadResponse.blob();
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
+        await pdfService.downloadPDF(id, currentPdf.title);
       } catch (error) {
         console.error('Error loading PDF:', error);
         toast({
@@ -57,6 +54,37 @@ const PDFView: React.FC = () => {
       }
     };
   }, [id, navigate, toast]);
+
+  const handleDelete = async () => {
+    try {
+      if (!id) return;
+      await pdfService.deletePDF(id);
+      toast({
+        title: 'Success',
+        description: 'PDF deleted successfully',
+      });
+      navigate('/pdfs');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete PDF',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      if (!id || !pdf) return;
+      await pdfService.downloadPDF(id, pdf.title);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download PDF',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -119,6 +147,20 @@ const PDFView: React.FC = () => {
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat with PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownload}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
             </Button>
           </div>
         </div>

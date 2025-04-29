@@ -4,48 +4,74 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
+import { FileText, Trash2, Download, RefreshCw, Upload } from 'lucide-react';
 import { format } from 'date-fns';
-import { authService } from '@/services/auth';
-import { usePDF } from '@/contexts/PDFContext';
 import { pdfService } from '@/services/pdfService';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://django-based-mcq-app.onrender.com';
+interface PDF {
+  id: string;
+  title: string;
+  uploaded_at: string;
+}
 
 const PDFList: React.FC = () => {
-  const { pdfs, isLoading, refreshPDFs } = usePDF();
+  const [pdfs, setPdfs] = useState<PDF[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const fetchPDFs = async () => {
+    try {
+      setIsLoading(true);
+      const data = await pdfService.getPDFs();
+      setPdfs(data);
+    } catch (error) {
+      console.error('Error fetching PDFs:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch PDFs',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPDFs();
+  }, []);
 
   const handleCardClick = (pdfId: string) => {
     navigate(`/pdfs/${pdfId}`);
   };
 
-  const handleDelete = async (pdfId: string) => {
+  const handleDelete = async (pdfId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await pdfService.deletePDF(pdfId);
-      await refreshPDFs();
+      await fetchPDFs();
       toast({
-        title: "Success",
-        description: "PDF deleted successfully",
+        title: 'Success',
+        description: 'PDF deleted successfully',
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete PDF",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete PDF',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleDownload = async (pdfId: string, title: string) => {
+  const handleDownload = async (pdfId: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await pdfService.downloadPDF(pdfId, title);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to download PDF",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to download PDF',
+        variant: 'destructive',
       });
     }
   };
@@ -60,15 +86,24 @@ const PDFList: React.FC = () => {
               Manage your uploaded PDF documents
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshPDFs}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchPDFs}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/upload')}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload PDF
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -103,10 +138,7 @@ const PDFList: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(pdf.id, pdf.title);
-                    }}
+                    onClick={(e) => handleDownload(pdf.id, pdf.title, e)}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download
@@ -114,10 +146,7 @@ const PDFList: React.FC = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(pdf.id);
-                    }}
+                    onClick={(e) => handleDelete(pdf.id, e)}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete

@@ -23,10 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Create uploads directory if it doesn't exist
-os.makedirs(MEDIA_ROOT, exist_ok=True)
+# PDF specific settings
+PDF_UPLOAD_DIR = os.path.join(MEDIA_ROOT, 'pdfs')
+VECTORSTORE_DIR = os.path.join(MEDIA_ROOT, 'vectorstores')
+
+# Create necessary directories if they don't exist
+os.makedirs(PDF_UPLOAD_DIR, exist_ok=True)
+os.makedirs(VECTORSTORE_DIR, exist_ok=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

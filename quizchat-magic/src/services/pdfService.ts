@@ -24,7 +24,7 @@ class PDFService {
         }
       });
 
-      return response.data;
+      return response.data as PDF[];
     } catch (error) {
       console.error('Error fetching PDFs:', error);
       if (axios.isAxiosError(error)) {
@@ -54,11 +54,12 @@ class PDFService {
         }
       });
 
-      if (!response.data.pdf_id) {
+      const data = response.data as { pdf_id: string };
+      if (!data.pdf_id) {
         throw new Error('Invalid response from server');
       }
 
-      return response.data.pdf_id;
+      return data.pdf_id;
     } catch (error) {
       console.error('Error uploading PDF:', error);
       if (axios.isAxiosError(error)) {
@@ -111,7 +112,7 @@ class PDFService {
       });
 
       // Create a URL for the blob
-      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', title);
