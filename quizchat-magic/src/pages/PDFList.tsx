@@ -68,7 +68,7 @@ const PDFList: React.FC = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${API_URL}/api/chat/pdf/${pdfId}/delete/`, {
+      const response = await fetch(`${API_URL}/api/chat/pdfs/${pdfId}/delete/`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
