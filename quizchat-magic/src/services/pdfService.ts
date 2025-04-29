@@ -78,7 +78,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(`${this.baseURL}/chat/pdfs/${pdfId}/delete/`, {
+      await axios.delete(`${this.baseURL}/chat/pdf/${pdfId}/delete/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

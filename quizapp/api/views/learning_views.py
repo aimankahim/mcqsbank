@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import google.generativeai as genai
-from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
+from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote, PDFDocument
 from django.utils import timezone
 
 load_dotenv()
@@ -77,21 +77,33 @@ class LearningAPIView(APIView):
         return serializer.validated_data
     
     def extract_text_from_pdf(self, pdf_id):
-        file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"PDF file not found at path: {file_path}")
-        
         try:
-            loader = PyPDFLoader(file_path)
-            pages = loader.load()
+            # Get the PDF document from the database
+            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            if not pdf.file:
+                raise FileNotFoundError("PDF file not found in database")
             
-            # Combine all page contents
-            text = "\n".join(page.page_content for page in pages)
-            if not text.strip():
-                raise ValueError("PDF appears to be empty or contains no extractable text")
-            return text
+            # Get the absolute path of the file
+            file_path = pdf.file.path
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"PDF file not found at path: {file_path}")
+            
+            try:
+                loader = PyPDFLoader(file_path)
+                pages = loader.load()
+                
+                # Combine all page contents
+                text = "\n".join(page.page_content for page in pages)
+                if not text.strip():
+                    raise ValueError("PDF appears to be empty or contains no extractable text")
+                return text
+            except Exception as e:
+                print(f"Error extracting PDF text: {str(e)}")
+                raise
+        except PDFDocument.DoesNotExist:
+            raise FileNotFoundError(f"PDF document with ID {pdf_id} not found")
         except Exception as e:
-            print(f"Error extracting PDF text: {str(e)}")
+            print(f"Error in extract_text_from_pdf: {str(e)}")
             raise
     
     def setup_chain_for_mode(self, mode):

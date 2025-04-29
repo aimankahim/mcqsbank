@@ -88,7 +88,7 @@ class LearningService {
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {
-    return this.makeRequest<Flashcard>('/generate-flashcards/', input);
+    return this.makeRequest<Flashcard>('/learning/generate-flashcards/', input);
   }
 
   async getRecentNotes(): Promise<any[]> {

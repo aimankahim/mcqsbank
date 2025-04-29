@@ -2,10 +2,16 @@ from django.db import models
 from django.contrib.auth.models import User
 import uuid
 
+def pdf_upload_path(instance, filename):
+    # Generate a unique filename using UUID
+    ext = filename.split('.')[-1]
+    filename = f"{instance.id}.{ext}"
+    return f'pdfs/{filename}'
+
 class PDFDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='pdfs/')  # This will now save to uploads/pdfs/
+    file = models.FileField(upload_to=pdf_upload_path)  # Use custom upload path
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
     embedding_store = models.CharField(max_length=255, blank=True, null=True)  # Path to the vector store
