@@ -57,7 +57,7 @@ class LearningService {
       if (!token) {
         throw new Error('Authentication required');
       }
-
+      
       const response = await axios.post(`${this.baseURL}${endpoint}`, data, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -198,7 +198,7 @@ class LearningService {
           'Authorization': `Bearer ${token}`
         }
       });
-
+      
       const data = response.data as { pdf_id: string };
       if (!data.pdf_id) {
         throw new Error('Invalid response from server');

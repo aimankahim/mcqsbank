@@ -85,35 +85,35 @@ const Upload: React.FC = () => {
             Upload a PDF document to start learning from it.
           </p>
         </div>
-
+        
         <Card
           className={`border-2 border-dashed ${
             dragActive ? 'border-primary bg-primary/5' : 'border-muted'
-          }`}
-          onDragEnter={handleDrag}
+              }`}
+              onDragEnter={handleDrag}
           onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
           <CardContent className="flex flex-col items-center justify-center py-12">
             <UploadIcon className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center mb-4">
               Drag and drop your PDF here, or click to select a file
             </p>
-            <Input
+              <Input
               ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileInputChange}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileInputChange}
               className="hidden"
             />
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
               {isUploading ? "Uploading..." : "Select PDF"}
-            </Button>
+                </Button>
           </CardContent>
         </Card>
       </div>
