@@ -22,7 +22,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/`, {
+      const response = await axios.post(`${this.baseURL}/learning/`, {}, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ class PDFService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post(`${this.baseURL}/learning/upload/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -84,7 +84,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(`${this.baseURL}/chat/pdf/${pdfId}/delete/`, {
+      await axios.delete(`${this.baseURL}/learning/${pdfId}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

@@ -1,9 +1,19 @@
 import axios from 'axios';
+import type { AxiosError } from 'axios';
 import { authService } from './auth';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+interface ApiError {
+  error?: string;
+  detail?: string;
+}
+
+interface ApiResponse {
+  pdf_id: string;
 }
 
 class ChatService {
@@ -21,7 +31,7 @@ class ChatService {
 
       console.log('Uploading PDF for chat:', file.name);
 
-      const response = await axios.post(`${this.baseURL}/upload-pdf/`, formData, {
+      const response = await axios.post<ApiResponse>(`${this.baseURL}/learning/upload/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -38,8 +48,9 @@ class ChatService {
     } catch (error) {
       console.error('PDF upload error:', error);
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.error || 
-                           error.response?.data?.detail || 
+        const axiosError = error as AxiosError<ApiError>;
+        const errorMessage = axiosError.response?.data?.error || 
+                           axiosError.response?.data?.detail || 
                            'Failed to upload PDF';
         throw new Error(errorMessage);
       }
