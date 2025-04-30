@@ -21,7 +21,7 @@ class ChatService {
 
       console.log('Uploading PDF for chat:', file.name);
 
-      const response = await axios.post(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post(`${this.baseURL}/upload-pdf/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

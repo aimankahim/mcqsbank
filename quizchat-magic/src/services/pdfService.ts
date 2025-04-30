@@ -22,7 +22,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/chat/pdfs/`, {
+      const response = await axios.get(`${this.baseURL}/learning/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -109,7 +109,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/chat/pdf/${pdfId}/download/`, {
+      const response = await axios.get(`${this.baseURL}/learning/${pdfId}/download/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
