@@ -12,13 +12,8 @@ interface ApiError {
   detail?: string;
 }
 
-interface UploadResponse {
-  message: string;
+interface ApiResponse {
   pdf_id: string;
-}
-
-interface ChatResponse {
-  response: string;
 }
 
 class ChatService {
@@ -36,7 +31,7 @@ class ChatService {
 
       console.log('Uploading PDF for chat:', file.name);
 
-      const response = await axios.post<UploadResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post<ApiResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -72,7 +67,7 @@ class ChatService {
 
       console.log('Sending chat message:', { message, pdfId });
 
-      const response = await axios.post<ChatResponse>(`${this.baseURL}/chat/`, {
+      const response = await axios.post(`${this.baseURL}/chat/`, {
         message,
         pdf_id: pdfId.toString()
       }, {
