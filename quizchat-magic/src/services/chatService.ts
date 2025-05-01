@@ -34,7 +34,16 @@ class ChatService {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('Uploading PDF for chat:', file.name);
+      console.log('Uploading PDF for chat:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        url: `${this.baseURL}/chat/upload-pdf/`,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
       const response = await axios.post<UploadResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
         headers: {
@@ -43,7 +52,12 @@ class ChatService {
         }
       });
       
-      console.log('Upload response:', response.data);
+      console.log('Upload response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: response.data
+      });
 
       if (!response.data.pdf_id) {
         throw new Error('Server did not return a PDF ID');
@@ -51,7 +65,10 @@ class ChatService {
       
       return response.data.pdf_id;
     } catch (error) {
-      console.error('PDF upload error:', error);
+      console.error('PDF upload error:', {
+        error,
+        response: error instanceof Error && 'response' in error ? (error as AxiosError<ApiError>).response?.data : null
+      });
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as AxiosError<ApiError>;
         const errorMessage = axiosError.response?.data?.error || 
