@@ -28,4 +28,4 @@ class NotesResponseSerializer(serializers.Serializer):
 class PDFInputSerializer(serializers.Serializer):
     pdf_id = serializers.CharField(required=True)
     num_items = serializers.IntegerField(required=False, default=5)
-    difficulty = serializers.ChoiceField(choices=['easy', 'medium', 'hard'], required=False, default='medium') 
+    difficulty = serializers.ChoiceField(choices=['easy', 'medium', 'hard'], required=False, default='medium')
