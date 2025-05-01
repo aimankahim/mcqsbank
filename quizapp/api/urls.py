@@ -26,12 +26,12 @@ urlpatterns = [
     path('pdfs/<int:pdf_id>/download/', PDFDownloadView.as_view(), name='pdf-download'),
     
     # Chat endpoints
-    path('chat/upload-pdf/', ChatPDFUploadView.as_view(), name='chat-upload-pdf'),
-    path('chat/pdfs/', ChatPDFListView.as_view(), name='chat-pdf-list'),
-    path('chat/pdf/<uuid:pdf_id>/', ChatPDFDetailView.as_view(), name='chat-pdf-detail'),
-    path('chat/pdf/<uuid:pdf_id>/download/', ChatPDFDownloadView.as_view(), name='chat-pdf-download'),
-    path('chat/pdf/<uuid:pdf_id>/delete/', ChatPDFDeleteView.as_view(), name='chat-pdf-delete'),
-    path('chat/', ChatView.as_view(), name='chat'),
+    path('api/chat/upload-pdf/', ChatPDFUploadView.as_view(), name='chat-upload-pdf'),
+    path('api/chat/pdfs/', ChatPDFListView.as_view(), name='chat-pdf-list'),
+    path('api/chat/pdf/<uuid:pdf_id>/', ChatPDFDetailView.as_view(), name='chat-pdf-detail'),
+    path('api/chat/pdf/<uuid:pdf_id>/download/', ChatPDFDownloadView.as_view(), name='chat-pdf-download'),
+    path('api/chat/pdf/<uuid:pdf_id>/delete/', ChatPDFDeleteView.as_view(), name='chat-pdf-delete'),
+    path('api/chat/', ChatView.as_view(), name='chat'),
     
     # Learning endpoints
     path('learning/generate-notes/', LearningAPIView.as_view(), name='generate-notes'),
