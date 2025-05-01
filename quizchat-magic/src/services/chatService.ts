@@ -12,17 +12,12 @@ interface ApiError {
   detail?: string;
 }
 
-interface UploadResponse {
-  message: string;
+interface ApiResponse {
   pdf_id: string;
 }
 
-interface ChatResponse {
-  response: string;
-}
-
 class ChatService {
-  private baseURL = 'https://mcqs-bank-frontend.onrender.com/api';
+  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
   async uploadPDF(file: File): Promise<string> {
     try {
@@ -34,30 +29,16 @@ class ChatService {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('Uploading PDF for chat:', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        url: `${this.baseURL}/chat/upload-pdf/`,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('Uploading PDF for chat:', file.name);
 
-      const response = await axios.post<UploadResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post<ApiResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
         }
       });
       
-      console.log('Upload response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        data: response.data
-      });
+      console.log('Upload response:', response.data);
 
       if (!response.data.pdf_id) {
         throw new Error('Server did not return a PDF ID');
@@ -65,11 +46,8 @@ class ChatService {
       
       return response.data.pdf_id;
     } catch (error) {
-      console.error('PDF upload error:', {
-        error,
-        response: error instanceof Error && 'response' in error ? (error as AxiosError<ApiError>).response?.data : null
-      });
-      if (error instanceof Error && 'response' in error) {
+      console.error('PDF upload error:', error);
+      if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<ApiError>;
         const errorMessage = axiosError.response?.data?.error || 
                            axiosError.response?.data?.detail || 
@@ -89,7 +67,7 @@ class ChatService {
 
       console.log('Sending chat message:', { message, pdfId });
 
-      const response = await axios.post<ChatResponse>(`${this.baseURL}/chat/`, {
+      const response = await axios.post(`${this.baseURL}/chat/`, {
         message,
         pdf_id: pdfId.toString()
       }, {
@@ -108,10 +86,9 @@ class ChatService {
       return response.data.response;
     } catch (error) {
       console.error('Chat error:', error);
-      if (error instanceof Error && 'response' in error) {
-        const axiosError = error as AxiosError<ApiError>;
-        const errorMessage = axiosError.response?.data?.error || 
-                           axiosError.response?.data?.detail || 
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
                            'Failed to send message';
         throw new Error(errorMessage);
       }

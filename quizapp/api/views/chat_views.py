@@ -238,12 +238,10 @@ class PDFUploadView(views.APIView):
                 pdf_doc.save()
                 
                 logger.info("PDF processing completed successfully")
-                response_data = {
+                return Response({
                     'message': 'PDF processed successfully',
                     'pdf_id': str(pdf_doc.id)
-                }
-                logger.info(f"Returning response: {response_data}")
-                return Response(response_data, status=status.HTTP_201_CREATED)
+                }, status=status.HTTP_201_CREATED)
                 
             except Exception as processing_error:
                 logger.error(f"Error processing PDF content: {str(processing_error)}", exc_info=True)
