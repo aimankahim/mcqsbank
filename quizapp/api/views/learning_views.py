@@ -23,8 +23,6 @@ import google.generativeai as genai
 from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
 from api.models.chat_models import PDFDocument
 from django.utils import timezone
-from io import BytesIO
-from PyPDF2 import PdfReader
 
 load_dotenv()
 
@@ -82,28 +80,27 @@ class LearningAPIView(APIView):
     def extract_text_from_pdf(self, pdf_id):
         try:
             # Get the PDF document from the database
-            pdf = PDFDocument.objects.get(id=pdf_id)
+            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            if not pdf.file:
+                raise FileNotFoundError("PDF file not found in database")
             
-            # Handle both filesystem and binary storage
-            if hasattr(pdf, 'file') and pdf.file:
-                # If file is stored in filesystem
-                file_path = pdf.file.path
-                if os.path.exists(file_path):
-                    loader = PyPDFLoader(file_path)
-                    pages = loader.load()
-                    text = "\n".join(page.page_content for page in pages)
-                else:
-                    raise FileNotFoundError(f"PDF file not found at path: {file_path}")
-            else:
-                # If file is stored as binary
-                pdf_bytes = pdf.file.read()
-                pdf_reader = PdfReader(BytesIO(pdf_bytes))
-                text = "\n".join(page.extract_text() for page in pdf_reader.pages)
+            # Get the absolute path of the file
+            file_path = pdf.file.path
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"PDF file not found at path: {file_path}")
             
-            if not text.strip():
-                raise ValueError("PDF appears to be empty or contains no extractable text")
-            return text
-            
+            try:
+                loader = PyPDFLoader(file_path)
+                pages = loader.load()
+                
+                # Combine all page contents
+                text = "\n".join(page.page_content for page in pages)
+                if not text.strip():
+                    raise ValueError("PDF appears to be empty or contains no extractable text")
+                return text
+            except Exception as e:
+                print(f"Error extracting PDF text: {str(e)}")
+                raise
         except PDFDocument.DoesNotExist:
             raise FileNotFoundError(f"PDF document with ID {pdf_id} not found")
         except Exception as e:
@@ -219,8 +216,7 @@ Text to create flashcards from:
             note = ConciseNote.objects.create(
                 title=f"Notes generated on {timezone.now().strftime('%Y-%m-%d %H:%M')}",
                 content=notes_data.notes,
-                user=user,
-                source_text=notes_data.notes  # Store the generated notes as source text
+                user=user
             )
             return note
         except Exception as e:
@@ -252,21 +248,7 @@ Text to create flashcards from:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
             # Extract text from PDF
-            try:
-                text = self.extract_text_from_pdf(serializer.validated_data["pdf_id"])
-            except FileNotFoundError as e:
-                print(f"PDF not found: {str(e)}")
-                return Response(
-                    {"error": str(e)},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            except Exception as e:
-                print(f"Error extracting PDF text: {str(e)}")
-                return Response(
-                    {"error": f"Error processing PDF: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-            
+            text = self.extract_text_from_pdf(serializer.validated_data["pdf_id"])
             if not text:
                 return Response(
                     {"error": "Could not extract text from PDF"},
@@ -274,64 +256,69 @@ Text to create flashcards from:
                 )
             
             # Setup the appropriate chain based on mode
-            try:
-                chain = self.setup_chain_for_mode(mode)
-            except Exception as e:
-                print(f"Error setting up chain: {str(e)}")
+            chain = self.setup_chain_for_mode(mode)
+            if not chain:
                 return Response(
-                    {"error": f"Error setting up processing chain: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"error": f"Invalid mode: {mode}"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
             
             # Prepare input data based on mode
-            input_data = {"text": text}
             if mode == "generate-flashcards":
-                input_data["num_flashcards"] = serializer.validated_data.get("num_items", 5)
+                input_data = {
+                    "text": text,
+                    "num_flashcards": serializer.validated_data.get("num_items", 5)
+                }
             elif mode == "generate-quiz":
-                input_data.update({
+                input_data = {
+                    "text": text,
                     "num_questions": serializer.validated_data.get("num_items", 5),
                     "difficulty": serializer.validated_data.get("difficulty", "medium")
-                })
+                }
+            else:  # generate-notes
+                input_data = {
+                    "text": text
+                }
             
             # Run the chain
-            try:
-                result = self.run_chain(chain, input_data)
-            except Exception as e:
-                print(f"Error running chain: {str(e)}")
-                return Response(
-                    {"error": f"Error generating content: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            result = self.run_chain(chain, input_data)
             
             # Save the generated content to the database
-            try:
-                if mode == "generate-quiz":
-                    saved_quiz = self.save_quiz(result, request.user)
-                    result_dict = result.dict()
-                    result_dict['id'] = saved_quiz.id
-                    return Response(result_dict, status=status.HTTP_200_OK)
-                elif mode == "generate-flashcards":
-                    saved_flashcards = self.save_flashcards(result, request.user)
-                    result_dict = result.dict()
-                    result_dict['ids'] = [fc.id for fc in saved_flashcards]
-                    return Response(result_dict, status=status.HTTP_200_OK)
-                elif mode == "generate-notes":
-                    saved_note = self.save_notes(result, request.user)
-                    result_dict = result.dict()
-                    result_dict['id'] = saved_note.id
-                    return Response(result_dict, status=status.HTTP_200_OK)
-            except Exception as e:
-                print(f"Error saving content: {str(e)}")
-                return Response(
-                    {"error": f"Error saving generated content: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            if mode == "generate-quiz":
+                saved_quiz = self.save_quiz(result, request.user)
+                result_dict = result.dict()
+                result_dict['id'] = saved_quiz.id
+                return Response(result_dict, status=status.HTTP_200_OK)
+            elif mode == "generate-flashcards":
+                saved_flashcards = self.save_flashcards(result, request.user)
+                result_dict = result.dict()
+                result_dict['ids'] = [fc.id for fc in saved_flashcards]
+                return Response(result_dict, status=status.HTTP_200_OK)
+            elif mode == "generate-notes":
+                saved_note = self.save_notes(result, request.user)
+                result_dict = result.dict()
+                result_dict['id'] = saved_note.id
+                return Response(result_dict, status=status.HTTP_200_OK)
             
+            if isinstance(result, dict) and "error" in result:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+            if hasattr(result, 'dict'):
+                return Response(result.dict(), status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except FileNotFoundError as e:
+            print(f"FileNotFoundError: {str(e)}")
             return Response(
-                {"error": f"Invalid mode: {mode}"},
+                {"error": str(e)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except ValueError as e:
+            print(f"ValueError: {str(e)}")
+            return Response(
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-            
         except Exception as e:
             import traceback
             print(f"Error processing request: {str(e)}")
