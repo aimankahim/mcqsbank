@@ -22,7 +22,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.post(`${this.baseURL}/learning/`, {}, {
+      const response = await axios.get(`${this.baseURL}/pdfs/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
