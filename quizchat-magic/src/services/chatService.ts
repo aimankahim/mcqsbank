@@ -22,7 +22,7 @@ interface ChatResponse {
 }
 
 class ChatService {
-  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
+  private baseURL = 'https://mcqs-bank-frontend.onrender.com/api';
 
   async uploadPDF(file: File): Promise<string> {
     try {
@@ -52,7 +52,7 @@ class ChatService {
       return response.data.pdf_id;
     } catch (error) {
       console.error('PDF upload error:', error);
-      if (axios.isAxiosError(error)) {
+      if (error instanceof Error && 'response' in error) {
         const axiosError = error as AxiosError<ApiError>;
         const errorMessage = axiosError.response?.data?.error || 
                            axiosError.response?.data?.detail || 
@@ -91,9 +91,10 @@ class ChatService {
       return response.data.response;
     } catch (error) {
       console.error('Chat error:', error);
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.error || 
-                           error.response?.data?.detail || 
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as AxiosError<ApiError>;
+        const errorMessage = axiosError.response?.data?.error || 
+                           axiosError.response?.data?.detail || 
                            'Failed to send message';
         throw new Error(errorMessage);
       }
