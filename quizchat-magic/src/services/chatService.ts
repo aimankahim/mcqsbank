@@ -13,8 +13,9 @@ interface ApiError {
 }
 
 interface UploadResponse {
-  message: string;
-  pdf_id: string;
+  id: string;
+  title: string;
+  uploaded_at: string;
 }
 
 interface ChatResponse {
@@ -45,11 +46,11 @@ class ChatService {
       
       console.log('Upload response:', response.data);
 
-      if (!response.data.pdf_id) {
+      if (!response.data.id) {
         throw new Error('Server did not return a PDF ID');
       }
       
-      return response.data.pdf_id;
+      return response.data.id;
     } catch (error) {
       console.error('PDF upload error:', error);
       if (error instanceof Error && 'response' in error) {
