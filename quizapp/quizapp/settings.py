@@ -66,9 +66,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -210,15 +210,6 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
-
-# Add these additional CORS settings
-CORS_ORIGIN_WHITELIST = [
-    "https://mcqs-bank-frontend.onrender.com",
-    "http://localhost:3000",
-]
-
-CORS_ALLOW_PRIVATE_NETWORK = True
-CORS_REPLACE_HTTPS_REFERER = True
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
