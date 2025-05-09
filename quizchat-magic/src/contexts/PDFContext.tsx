@@ -10,6 +10,8 @@ interface PDFContextType {
   refreshPDFs: () => Promise<void>;
   uploadPDF: (file: File) => Promise<string>;
   deletePDF: (pdfId: string) => Promise<void>;
+  addPDF: (file: File) => Promise<void>;
+  getPDFById: (id: string) => PDF | undefined;
 }
 
 const PDFContext = createContext<PDFContextType | undefined>(undefined);
@@ -61,12 +63,40 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addPDF = async (file: File): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const pdfId = await pdfService.uploadPDF(file);
+      await refreshPDFs(); // Refresh the list after successful upload
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add PDF');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPDFById = (id: string): PDF | undefined => {
+    return pdfs.find(pdf => pdf.id === id);
+  };
+
   useEffect(() => {
     refreshPDFs();
   }, []);
 
   return (
-    <PDFContext.Provider value={{ pdfs, loading, isLoading: loading, error, refreshPDFs, uploadPDF, deletePDF }}>
+    <PDFContext.Provider value={{ 
+      pdfs, 
+      loading, 
+      isLoading: loading, 
+      error, 
+      refreshPDFs, 
+      uploadPDF, 
+      deletePDF,
+      addPDF,
+      getPDFById 
+    }}>
       {children}
     </PDFContext.Provider>
   );

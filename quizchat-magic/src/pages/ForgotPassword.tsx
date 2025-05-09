@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import axios from 'axios';
+import { API_ENDPOINTS, api, ForgotPasswordResponse, VerifyOTPResponse, ResetPasswordResponse } from '@/config/api';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -23,7 +23,7 @@ const ForgotPassword = () => {
     setError('');
 
     try {
-      const response = await axios.post('https://django-based-mcq-app.onrender.com/api/forgot-password/', { email });
+      const response = await api.post<ForgotPasswordResponse>(API_ENDPOINTS.FORGOT_PASSWORD, { email });
       if (response.data.message) {
         setStep(2);
       }
@@ -40,7 +40,7 @@ const ForgotPassword = () => {
     setError('');
 
     try {
-      const response = await axios.post('https://django-based-mcq-app.onrender.com/api/verify-otp/', {
+      const response = await api.post<VerifyOTPResponse>(API_ENDPOINTS.VERIFY_OTP, {
         email,
         otp
       });
@@ -67,7 +67,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      await axios.post('https://django-based-mcq-app.onrender.com/api/reset-password/', {
+      await api.post<ResetPasswordResponse>(API_ENDPOINTS.RESET_PASSWORD, {
         email,
         token: resetToken,
         new_password: newPassword

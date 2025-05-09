@@ -9,6 +9,7 @@ type FlashCard = {
   front: string;
   back: string;
   createdAt: Date;
+  lastViewed?: Date;
 };
 
 type Quiz = {
@@ -47,6 +48,7 @@ type LearningContextType = {
   quizzes: Quiz[];
   notes: Note[];
   chatHistory: ChatMessage[];
+  recentFlashcards: FlashCard[];
   addFlashCard: (card: Omit<FlashCard, 'id' | 'createdAt'>) => void;
   addQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
   addNote: (note: Omit<Note, 'id' | 'createdAt'>) => void;
@@ -59,6 +61,7 @@ type LearningContextType = {
   deleteQuiz: (id: string) => void;
   deleteNote: (id: string) => void;
   generateQuizFromPDF: (pdfId: string, numQuestions?: number) => Promise<Quiz>;
+  updateFlashcardLastViewed: (id: string) => void;
 };
 
 const LearningContext = createContext<LearningContextType | undefined>(undefined);
@@ -84,11 +87,18 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('flashcards', JSON.stringify(flashcards));
   }, [flashcards]);
 
+  // Get recent flashcards (last 5 viewed)
+  const recentFlashcards = flashcards
+    .filter(card => card.lastViewed)
+    .sort((a, b) => (b.lastViewed?.getTime() || 0) - (a.lastViewed?.getTime() || 0))
+    .slice(0, 5);
+
   const addFlashCard = (card: Omit<FlashCard, 'id' | 'createdAt'>) => {
     const newCard = {
       ...card,
       id: String(Date.now()),
-      createdAt: new Date()
+      createdAt: new Date(),
+      lastViewed: new Date()
     };
     setFlashcards(prev => [...prev, newCard]);
     toast({
@@ -223,12 +233,21 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const updateFlashcardLastViewed = (id: string) => {
+    setFlashcards(prev => prev.map(card => 
+      card.id === id 
+        ? { ...card, lastViewed: new Date() }
+        : card
+    ));
+  };
+
   return (
     <LearningContext.Provider value={{ 
       flashcards,
       quizzes,
       notes,
       chatHistory,
+      recentFlashcards,
       addFlashCard,
       addQuiz,
       addNote,
@@ -240,7 +259,8 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       deleteFlashCard,
       deleteQuiz,
       deleteNote,
-      generateQuizFromPDF
+      generateQuizFromPDF,
+      updateFlashcardLastViewed
     }}>
       {children}
     </LearningContext.Provider>

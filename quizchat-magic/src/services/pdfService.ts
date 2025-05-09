@@ -7,10 +7,14 @@ export interface PDF {
   uploaded_at: string;
 }
 
-// Type guard for AxiosError
-function isAxiosError(error: unknown): error is { response?: { data?: { error?: string; detail?: string } } } {
-  return typeof error === 'object' && error !== null && 'response' in error;
+interface ApiError {
+  error?: string;
+  detail?: string;
 }
+
+const isAxiosError = (error: any): error is { response?: { data?: ApiError } } => {
+  return error.isAxiosError === true;
+};
 
 class PDFService {
   private baseURL = 'https://django-based-mcq-app.onrender.com/api';
@@ -22,7 +26,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/pdfs/`, {
+      const response = await axios.get(`${this.baseURL}/chat/pdfs/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -52,7 +56,7 @@ class PDFService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${this.baseURL}/learning/upload/`, formData, {
+      const response = await axios.post(`${this.baseURL}/chat/upload-pdf/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -84,7 +88,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(`${this.baseURL}/learning/${pdfId}/`, {
+      await axios.delete(`${this.baseURL}/chat/pdf/${pdfId}/delete/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -109,7 +113,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/${pdfId}/download/`, {
+      const response = await axios.get(`${this.baseURL}/chat/pdf/${pdfId}/download/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

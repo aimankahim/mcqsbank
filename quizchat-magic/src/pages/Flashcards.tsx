@@ -62,22 +62,33 @@ const Flashcards: React.FC = () => {
   const [numFlashcards, setNumFlashcards] = useState<number>(5);
   
   const { pdfs, isLoading } = usePDF();
-  const { flashcards, addFlashCard, deleteFlashCard, getFlashcardsByPDF } = useLearning();
+  const { flashcards, addFlashCard, deleteFlashCard, getFlashcardsByPDF, updateFlashcardLastViewed } = useLearning();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Get PDF ID from URL if present
+  // Get PDF ID and flashcard ID from URL if present
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const pdfId = params.get('pdfId');
+    const flashcardId = params.get('flashcard');
     
     if (pdfId && pdfs.find(p => p.id === pdfId)) {
       setSelectedPdfId(pdfId);
+      
+      // If a specific flashcard is requested, find its index
+      if (flashcardId) {
+        const filteredCards = getFlashcardsByPDF(pdfId);
+        const cardIndex = filteredCards.findIndex(card => card.id === flashcardId);
+        if (cardIndex !== -1) {
+          setActiveCardIndex(cardIndex);
+          updateFlashcardLastViewed(flashcardId);
+        }
+      }
     } else if (pdfs.length > 0 && !selectedPdfId) {
       setSelectedPdfId(pdfs[0].id);
     }
-  }, [location.search, pdfs, selectedPdfId]);
+  }, [location.search, pdfs, selectedPdfId, getFlashcardsByPDF, updateFlashcardLastViewed]);
   
   // Get flashcards for the selected PDF
   const filteredFlashcards = selectedPdfId 
@@ -145,7 +156,7 @@ const Flashcards: React.FC = () => {
     if (!selectedPdfId) return;
     
     const flashcard = filteredFlashcards[index];
-    deleteFlashCard(selectedPdfId, flashcard.id);
+    deleteFlashCard(flashcard.id);
     
     if (activeCardIndex >= filteredFlashcards.length - 1) {
       setActiveCardIndex(Math.max(0, filteredFlashcards.length - 2));
