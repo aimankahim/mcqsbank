@@ -103,7 +103,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-purple-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8 animate-fadeIn">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gradient mb-2">PDFLearner</h1>
+          <h1 className="text-4xl font-bold text-gradient mb-2">EDUFLEX</h1>
           <p className="text-gray-600">Transform your PDFs into interactive learning materials</p>
         </div>
         

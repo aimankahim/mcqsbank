@@ -11,7 +11,7 @@ const LoadingScreen: React.FC = () => {
           </div>
           <div className="absolute inset-0 rounded-full border-4 border-brand-200 animate-ping"></div>
         </div>
-        <h1 className="text-2xl font-bold text-gradient animate-fadeIn">PDFLearner</h1>
+        <h1 className="text-2xl font-bold text-gradient animate-fadeIn">EDUFLEX</h1>
         <p className="text-muted-foreground animate-fadeIn">Loading your learning experience...</p>
       </div>
     </div>

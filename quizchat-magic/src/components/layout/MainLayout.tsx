@@ -24,7 +24,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation();
 
   const menuItems = [
-    { icon: <Home size={20} />, label: 'Dashhamza', path: '/' },
+    { icon: <Home size={20} />, label: 'Dashboard', path: '/' },
     { icon: <Upload size={20} />, label: 'Upload', path: '/upload' },
     { icon: <FileText size={20} />, label: 'PDFs', path: '/pdfs' },
     { icon: <MessageSquare size={20} />, label: 'Chat', path: '/chat' },
@@ -42,7 +42,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <div className="w-64 bg-sidebar border-r border-border shadow-sm flex flex-col">
         <div className="p-4 border-b border-border flex items-center justify-center">
-          <h1 className="text-xl font-bold text-gradient">PDFLearner</h1>
+          <h1 className="text-xl font-bold text-gradient">EDUFLEX</h1>
         </div>
         
         <nav className="flex-1 px-2 py-4 space-y-1">
