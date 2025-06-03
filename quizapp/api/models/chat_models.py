@@ -8,6 +8,7 @@ def pdf_upload_path(instance, filename):
     # Generate a unique filename using UUID
     ext = filename.split('.')[-1]
     unique_filename = f"{uuid.uuid4()}_{filename}"
+    # Ensure the path is relative to MEDIA_ROOT
     return os.path.join('pdfs', unique_filename)
 
 class PDFDocument(models.Model):
