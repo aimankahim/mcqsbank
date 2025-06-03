@@ -64,9 +64,12 @@ class LearningAPIView(APIView):
         try:
             self.llm = ChatGoogleGenerativeAI(
                 model="gemini-2.0-flash",  # Using gemini-2.0-flash model
-                temperature=0,
+                temperature=0.7,  # Increased temperature for better language adaptation
                 google_api_key=GOOGLE_API_KEY,
-                convert_system_message_to_human=True
+                convert_system_message_to_human=True,
+                max_output_tokens=2048,  # Increased token limit for longer responses
+                top_p=0.95,  # Increased top_p for more diverse language generation
+                top_k=40  # Increased top_k for better language selection
             )
         except Exception as e:
             print(f"Error initializing Gemini: {str(e)}")
@@ -79,8 +82,8 @@ class LearningAPIView(APIView):
     
     def extract_text_from_pdf(self, pdf_id):
         try:
-            # Get the PDF document from the database
-            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            # Get the PDF document from the database, ensuring it belongs to the current user
+            pdf = PDFDocument.objects.get(id=pdf_id, user=self.request.user, processed=True)
             if not pdf.file:
                 raise FileNotFoundError("PDF file not found in database")
             
@@ -102,7 +105,7 @@ class LearningAPIView(APIView):
                 print(f"Error extracting PDF text: {str(e)}")
                 raise
         except PDFDocument.DoesNotExist:
-            raise FileNotFoundError(f"PDF document with ID {pdf_id} not found")
+            raise FileNotFoundError(f"PDF document with ID {pdf_id} not found or you don't have permission to access it")
         except Exception as e:
             print(f"Error in extract_text_from_pdf: {str(e)}")
             raise
@@ -120,25 +123,111 @@ class LearningAPIView(APIView):
                 
             elif mode == "generate-quiz":
                 quiz_parser = PydanticOutputParser(pydantic_object=Quiz)
-                quiz_prompt = PromptTemplate(
-                    template="""Create a quiz from the following text with {num_questions} multiple choice questions.
-Each question should test understanding of key concepts from the text.
+                
+                # Different prompts for different quiz types
+                prompts = {
+                    'multiple_choice': """You are a professional translator and quiz creator. Your task is to create a multiple choice quiz in {language} language from the following text.
+
+IMPORTANT: You MUST create the ENTIRE quiz (questions, options, and answers) in {language} language ONLY.
 
 Requirements:
-- Each question should be clear and focused
-- Provide exactly 4 options per question
+- Create exactly {num_questions} questions
+- Each question must be in {language} language
+- Each question should test understanding of key concepts
+- Provide exactly 4 options per question in {language} language
 - One option must be the correct answer
 - Other options should be plausible but clearly incorrect
 - Make the questions {difficulty} difficulty level
+- ALL content MUST be in {language} language
+- Ensure proper grammar and natural language flow in {language}
+- If {language} is not English, provide culturally appropriate examples
 
 Text to create quiz from:
 {text}
 
 {format_instructions}""",
-                    input_variables=["text", "num_questions", "difficulty"],
-                    partial_variables={"format_instructions": quiz_parser.get_format_instructions()}
-                )
-                return quiz_prompt | self.llm | quiz_parser
+
+                    'true_false': """You are a professional translator and quiz creator. Your task is to create a true/false quiz in {language} language from the following text.
+
+IMPORTANT: You MUST create the ENTIRE quiz (questions, options, and answers) in {language} language ONLY.
+
+Requirements:
+- Create exactly {num_questions} questions
+- Each statement must be in {language} language
+- Each statement should be clear and unambiguous
+- The statement should be either definitely true or definitely false
+- Make the questions {difficulty} difficulty level
+- Options should be exactly ["True", "False"] in {language} language
+- ALL content must be in {language} language
+
+Text to create quiz from:
+{text}
+
+{format_instructions}""",
+
+                    'fill_in_blank': """You are a professional translator and quiz creator. Your task is to create a fill-in-the-blank quiz in {language} language from the following text.
+
+IMPORTANT: You MUST create the ENTIRE quiz (questions, options, and answers) in {language} language ONLY.
+
+Requirements:
+- Create exactly {num_questions} questions
+- Each question must be in {language} language
+- Each question should have a blank space (_____) for the answer
+- The blank should be for a specific, important term or concept
+- Provide possible answers including the correct one in {language} language
+- Make the questions {difficulty} difficulty level
+- ALL content must be in {language} language
+
+Text to create quiz from:
+{text}
+
+{format_instructions}""",
+
+                    'matching': """You are a professional translator and quiz creator. Your task is to create a matching quiz in {language} language from the following text.
+
+IMPORTANT: You MUST create the ENTIRE quiz (questions, options, and answers) in {language} language ONLY.
+
+Requirements:
+- Create exactly {num_questions} questions
+- Each term and definition must be in {language} language
+- Each term should be clear and specific
+- Provide a list of possible matches in {language} language
+- One match should be the correct answer
+- Make the questions {difficulty} difficulty level
+- ALL content must be in {language} language
+
+Text to create quiz from:
+{text}
+
+{format_instructions}""",
+
+                    'mixed': """You are a professional translator and quiz creator. Your task is to create a mixed quiz in {language} language from the following text.
+
+IMPORTANT: You MUST create the ENTIRE quiz (questions, options, and answers) in {language} language ONLY.
+
+Requirements:
+- Create exactly {num_questions} questions
+- Distribute questions evenly among different types
+- Each question must be in {language} language
+- Each question should be clear and focused
+- Make the questions {difficulty} difficulty level
+- ALL content must be in {language} language
+- Include a 'type' field for each question indicating its format
+
+Text to create quiz from:
+{text}
+
+{format_instructions}"""
+                }
+
+                def get_quiz_prompt(quiz_type='multiple_choice'):
+                    return PromptTemplate(
+                        template=prompts.get(quiz_type, prompts['multiple_choice']),
+                        input_variables=["text", "num_questions", "difficulty", "language"],
+                        partial_variables={"format_instructions": quiz_parser.get_format_instructions()}
+                    )
+
+                return get_quiz_prompt
                 
             elif mode == "generate-flashcards":
                 flashcard_parser = PydanticOutputParser(pydantic_object=Flashcard)
@@ -223,6 +312,54 @@ Text to create flashcards from:
             print(f"Error saving notes: {str(e)}")
             raise
 
+    def translate_quiz_content(self, quiz_data, target_language):
+        try:
+            print(f"Starting translation to {target_language}")
+            print(f"Original quiz data: {quiz_data.dict()}")
+            
+            translation_prompt = PromptTemplate(
+                template="""You are a professional translator. Your task is to translate the following quiz content to {target_language}.
+The input is a JSON object containing quiz questions, options, and answers. Translate ONLY the text content while keeping the JSON structure intact.
+
+Original quiz content:
+{quiz_content}
+
+Requirements:
+- Translate ALL text content to {target_language}
+- Keep the JSON structure and format exactly the same
+- Translate questions, options, and answers
+- Ensure natural language flow in {target_language}
+- Do not modify any JSON keys or structure
+- Preserve the exact same number of questions and options
+
+Example format to maintain:
+{
+    "questions": [
+        {
+            "question": "Translated question here",
+            "options": ["Translated option 1", "Translated option 2", "Translated option 3", "Translated option 4"],
+            "correct_answer": "Translated correct answer"
+        }
+    ]
+}
+
+{format_instructions}""",
+                input_variables=["quiz_content", "target_language"],
+                partial_variables={"format_instructions": PydanticOutputParser(pydantic_object=Quiz).get_format_instructions()}
+            )
+            
+            translation_chain = translation_prompt | self.llm | PydanticOutputParser(pydantic_object=Quiz)
+            translated_quiz = translation_chain.invoke({
+                "quiz_content": quiz_data.dict(),
+                "target_language": target_language
+            })
+            
+            print(f"Translated quiz data: {translated_quiz.dict()}")
+            return translated_quiz
+        except Exception as e:
+            print(f"Error in translation: {str(e)}")
+            raise
+
     @swagger_auto_schema(
         request_body=PDFInputSerializer,
         responses={
@@ -240,6 +377,11 @@ Text to create flashcards from:
             # Get the mode from the URL
             mode = request.path.strip('/').split('/')[-1]
             print(f"Processing request for mode: {mode}")
+            print(f"Request data: {request.data}")
+            
+            # Get language directly from request data first
+            target_language = request.data.get('language', 'English')
+            print(f"Language from request data: {target_language}")
             
             # Validate the request data
             serializer = PDFInputSerializer(data=request.data)
@@ -247,8 +389,11 @@ Text to create flashcards from:
                 print(f"Invalid request data: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
+            validated_data = serializer.validated_data
+            print(f"Validated data: {validated_data}")
+            
             # Extract text from PDF
-            text = self.extract_text_from_pdf(serializer.validated_data["pdf_id"])
+            text = self.extract_text_from_pdf(validated_data["pdf_id"])
             if not text:
                 return Response(
                     {"error": "Could not extract text from PDF"},
@@ -267,62 +412,64 @@ Text to create flashcards from:
             if mode == "generate-flashcards":
                 input_data = {
                     "text": text,
-                    "num_flashcards": serializer.validated_data.get("num_items", 5)
+                    "num_flashcards": validated_data.get("num_items", 5)
                 }
-            elif mode == "generate-quiz":
-                input_data = {
-                    "text": text,
-                    "num_questions": serializer.validated_data.get("num_items", 5),
-                    "difficulty": serializer.validated_data.get("difficulty", "medium")
-                }
-            else:  # generate-notes
-                input_data = {
-                    "text": text
-                }
-            
-            # Run the chain
-            result = self.run_chain(chain, input_data)
-            
-            # Save the generated content to the database
-            if mode == "generate-quiz":
-                saved_quiz = self.save_quiz(result, request.user)
-                result_dict = result.dict()
-                result_dict['id'] = saved_quiz.id
-                return Response(result_dict, status=status.HTTP_200_OK)
-            elif mode == "generate-flashcards":
+                result = self.run_chain(chain, input_data)
                 saved_flashcards = self.save_flashcards(result, request.user)
                 result_dict = result.dict()
                 result_dict['ids'] = [fc.id for fc in saved_flashcards]
                 return Response(result_dict, status=status.HTTP_200_OK)
+            elif mode == "generate-quiz":
+                quiz_type = validated_data.get("quiz_type", "multiple_choice")
+                
+                # Use the language from request data
+                print(f"Using target language: {target_language}")
+                
+                # Get the appropriate prompt for the quiz type
+                prompt = chain(quiz_type)
+                chain = prompt | self.llm | PydanticOutputParser(pydantic_object=Quiz)
+                
+                # Prepare input data with the target language
+                input_data = {
+                    "text": text,
+                    "num_questions": validated_data.get("num_items", 5),
+                    "difficulty": validated_data.get("difficulty", "medium"),
+                    "language": target_language
+                }
+                
+                print(f"Input data for quiz generation: {input_data}")
+                
+                # Generate quiz in requested language
+                result = self.run_chain(chain, input_data)
+                print(f"Generated quiz in {target_language}: {result.dict()}")
+                
+                # Save the quiz with the correct language
+                saved_quiz = self.save_quiz(result, request.user)
+                result_dict = result.dict()
+                result_dict['id'] = saved_quiz.id
+                result_dict['content'] = {
+                    'questions': result_dict['questions'],
+                    'quiz_type': quiz_type,
+                    'language': target_language
+                }
+                return Response(result_dict, status=status.HTTP_200_OK)
             elif mode == "generate-notes":
+                input_data = {
+                    "text": text
+                }
+                result = self.run_chain(chain, input_data)
                 saved_note = self.save_notes(result, request.user)
                 result_dict = result.dict()
                 result_dict['id'] = saved_note.id
                 return Response(result_dict, status=status.HTTP_200_OK)
             
-            if isinstance(result, dict) and "error" in result:
-                return Response(result, status=status.HTTP_400_BAD_REQUEST)
-            
-            if hasattr(result, 'dict'):
-                return Response(result.dict(), status=status.HTTP_200_OK)
-            return Response(result, status=status.HTTP_200_OK)
-            
-        except FileNotFoundError as e:
-            print(f"FileNotFoundError: {str(e)}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except ValueError as e:
-            print(f"ValueError: {str(e)}")
-            return Response(
-                {"error": str(e)},
+                {"error": f"Invalid mode: {mode}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+            
         except Exception as e:
-            import traceback
-            print(f"Error processing request: {str(e)}")
-            print(f"Traceback: {traceback.format_exc()}")
+            print(f"Error in post: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

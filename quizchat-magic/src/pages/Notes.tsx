@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, RefreshCw, Download } from 'lucide-react';
+import { FileText, RefreshCw, Download, Wand2, Upload } from 'lucide-react';
 
 const Notes: React.FC = () => {
   const [selectedPdfId, setSelectedPdfId] = useState<string | null>(null);
@@ -78,94 +78,118 @@ const Notes: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="animate-fadeIn">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Concise Notes</h1>
-            <p className="text-muted-foreground">
-              Generate concise and well-organized notes from your PDFs
+      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-purple-50 to-blue-50">
+        <div className="container mx-auto px-4 py-8">
+          {/* Hero Section */}
+          <div className="text-center mb-12 space-y-4">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+              Smart Notes
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Generate concise and well-organized notes from your PDFs using AI
             </p>
           </div>
-        </div>
 
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Generate Notes</CardTitle>
-              <CardDescription>
-                Select a PDF to generate concise notes from its content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-4">
-                <div className="flex-1">
+          <div className="max-w-4xl mx-auto">
+            {/* Header Section */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Generate Notes</h2>
+                    <p className="text-gray-600">Select a PDF to create concise notes</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-4">
                   {isLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-500"></div>
                   ) : pdfs.length > 0 ? (
-                    <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a PDF" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pdfs.map((pdf) => (
-                          <SelectItem key={pdf.id} value={pdf.id}>
-                            {pdf.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <>
+                      <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
+                        <SelectTrigger className="w-[250px] h-12 bg-white/50 backdrop-blur-sm border-2 focus:border-brand-500">
+                          <SelectValue placeholder="Select a PDF" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pdfs.map((pdf) => (
+                            <SelectItem key={pdf.id} value={pdf.id}>
+                              {pdf.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Button
+                        onClick={generateNotes}
+                        disabled={isGenerating || !selectedPdfId}
+                        className="h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-5 w-5 mr-2" />
+                            Generate Notes
+                          </>
+                        )}
+                      </Button>
+                    </>
                   ) : (
                     <Button 
                       variant="outline" 
-                      className="flex items-center" 
+                      className="h-12 flex items-center space-x-2 border-2 hover:border-brand-500 hover:bg-brand-50"
                       onClick={() => navigate('/upload')}
                     >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Upload PDF
+                      <Upload className="h-5 w-5" />
+                      <span>Upload PDF</span>
                     </Button>
                   )}
                 </div>
-
-                <Button
-                  onClick={generateNotes}
-                  disabled={isGenerating || !selectedPdfId}
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Generate Notes
-                    </>
-                  )}
-                </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {notes && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Generated Notes</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={downloadNotes}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="whitespace-pre-wrap">{notes}</div>
-              </CardContent>
-            </Card>
-          )}
+            {/* Notes Content */}
+            {notes && (
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-2xl font-bold text-gray-900">Generated Notes</CardTitle>
+                      <CardDescription className="text-base mt-1">
+                        Your AI-generated concise notes
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={downloadNotes}
+                      className="h-12 hover:bg-brand-50 hover:text-brand-600"
+                    >
+                      <Download className="h-5 w-5 mr-2" />
+                      Download Notes
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-white/50 p-6 rounded-lg border border-gray-100">
+                    <div className="prose prose-lg max-w-none">
+                      {notes.split('\n').map((paragraph, index) => (
+                        <p key={index} className="mb-4 last:mb-0">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </MainLayout>

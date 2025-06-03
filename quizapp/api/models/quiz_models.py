@@ -1,9 +1,35 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class QuizType(models.TextChoices):
+    MULTIPLE_CHOICE = 'multiple_choice', 'Multiple Choice'
+    TRUE_FALSE = 'true_false', 'True/False'
+    FILL_IN_BLANK = 'fill_in_blank', 'Fill in the Blank'
+    MATCHING = 'matching', 'Matching'
+    MIXED = 'mixed', 'Mixed'
+
+class DifficultyLevel(models.TextChoices):
+    EASY = 'easy', 'Easy'
+    MEDIUM = 'medium', 'Medium'
+    HARD = 'hard', 'Hard'
+
 class Quiz(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    quiz_type = models.CharField(
+        max_length=20,
+        choices=QuizType.choices,
+        default=QuizType.MULTIPLE_CHOICE
+    )
+    difficulty = models.CharField(
+        max_length=10,
+        choices=DifficultyLevel.choices,
+        default=DifficultyLevel.MEDIUM
+    )
+    language = models.CharField(
+        max_length=50,
+        default='English'
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quizzes')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -37,11 +37,12 @@ class PDFUploadView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Create PDF record in database
+            # Create PDF record in database with user association
             pdf = PDFDocument.objects.create(
                 title=file.name,
                 file=file,
-                processed=False
+                processed=False,
+                user=request.user  # Associate PDF with the current user
             )
             
             return Response({"pdf_id": str(pdf.id)}, status=status.HTTP_200_OK)
@@ -56,7 +57,8 @@ class PDFListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        pdfs = PDFDocument.objects.filter(processed=True).order_by('-uploaded_at')
+        # Filter PDFs by the current user
+        pdfs = PDFDocument.objects.filter(user=request.user, processed=True).order_by('-uploaded_at')
         data = [{
             'id': str(pdf.id),
             'title': pdf.title,
@@ -69,7 +71,8 @@ class PDFDeleteView(APIView):
 
     def delete(self, request, pdf_id):
         try:
-            pdf = PDFDocument.objects.get(id=pdf_id)
+            # Only allow deletion of user's own PDFs
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user)
             pdf.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except PDFDocument.DoesNotExist:
@@ -83,7 +86,8 @@ class PDFDownloadView(APIView):
 
     def get(self, request, pdf_id):
         try:
-            pdf = PDFDocument.objects.get(id=pdf_id)
+            # Only allow download of user's own PDFs
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user)
             response = FileResponse(pdf.file, content_type='application/pdf')
             response['Content-Disposition'] = f'attachment; filename="{pdf.title}"'
             return response

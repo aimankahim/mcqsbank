@@ -1,6 +1,48 @@
 from rest_framework import serializers
 from api.models.quiz_models import Quiz, QuizQuestion, Flashcard, ConciseNote
 
+class PDFInputSerializer(serializers.Serializer):
+    pdf_id = serializers.CharField(required=True)
+    num_items = serializers.IntegerField(required=False, default=5)
+    difficulty = serializers.ChoiceField(
+        choices=['easy', 'medium', 'hard'],
+        required=False,
+        default='medium'
+    )
+    language = serializers.CharField(
+        required=False,
+        default='English',
+        help_text="The language for the quiz content (e.g., 'Spanish', 'French', etc.)"
+    )
+    quiz_type = serializers.ChoiceField(
+        choices=['multiple_choice', 'true_false', 'fill_in_blank', 'matching', 'mixed'],
+        required=False,
+        default='multiple_choice'
+    )
+    content = serializers.DictField(required=False)
+
+    def validate_language(self, value):
+        if not value:
+            return "English"
+        # Convert to title case for consistency
+        return value.title()
+
+    def validate(self, data):
+        # Ensure language is included in validated data
+        if 'language' not in data:
+            data['language'] = 'English'
+        # Ensure content is included if present in initial data
+        if 'content' in self.initial_data:
+            data['content'] = self.initial_data['content']
+        return data
+
+    def to_internal_value(self, data):
+        # Ensure language is preserved
+        internal_value = super().to_internal_value(data)
+        if 'language' in data:
+            internal_value['language'] = data['language']
+        return internal_value
+
 class QuizQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizQuestion
@@ -11,7 +53,7 @@ class QuizSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'questions', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'description', 'questions', 'difficulty', 'language', 'quiz_type', 'created_at', 'updated_at']
         read_only_fields = ['user']
 
     def create(self, validated_data):

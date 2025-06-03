@@ -52,7 +52,7 @@ class AuthService {
                 });
                 username = response.data.username;
                 console.log('Username fetched:', username);
-            } catch (error) {
+            } catch (error: any) {
                 console.log('Failed to fetch username, using email local part');
                 // If that fails, use the email's local part as username
                 username = credentials.email.split('@')[0];
@@ -73,14 +73,17 @@ class AuthService {
                 // Store the username in localStorage for future logins
                 localStorage.setItem('username', username);
                 console.log('Tokens stored in localStorage');
+                return response.data;
             }
-            return response.data;
+            throw new Error('Invalid response from server');
         } catch (error: any) {
             console.error('Login error:', error.response?.data || error.message);
-            if (error.response?.status === 401) {
-                throw new Error('Username or password is incorrect');
-            }
-            throw error;
+            // Create a new error with the proper message
+            const errorMessage = error.response?.data?.detail || 'Invalid email or password';
+            const newError: any = new Error(errorMessage);
+            // Preserve the original error data
+            newError.response = error.response;
+            throw newError;
         }
     }
 
@@ -197,7 +200,7 @@ axios.interceptors.response.use(
             if (error.response.status === 401) {
                 // Handle authentication errors
                 if (error.config.url?.includes('/token/')) {
-                    errorMessage = 'Username or password is incorrect';
+                    errorMessage = 'Invalid email or password';
                 } else {
                     errorMessage = 'Authentication failed. Please login again.';
                 }
@@ -239,12 +242,14 @@ axios.interceptors.request.use(
     }
 );
 
+// Remove the automatic redirect interceptor and replace with a simpler one
 axios.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Only attempt token refresh for non-login requests
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/token/')) {
             console.log('Received 401, attempting token refresh');
             originalRequest._retry = true;
 
@@ -255,9 +260,7 @@ axios.interceptors.response.use(
                 return axios(originalRequest);
             } catch (refreshError) {
                 console.error('Token refresh failed:', refreshError);
-                // If refresh fails, redirect to login
                 authService.logout();
-                window.location.href = '/login';
                 throw refreshError;
             }
         }

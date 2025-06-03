@@ -18,6 +18,23 @@ class PDFInputSerializer(serializers.Serializer):
         default="medium",
         choices=["easy", "medium", "hard"]
     )
+    language = serializers.ChoiceField(
+        required=False,
+        default="English",
+        choices=["English", "Spanish", "French", "German", "Italian", "Portuguese", "Chinese", "Japanese", "Korean", "Russian", "Arabic", "Hindi"]
+    )
+    quiz_type = serializers.ChoiceField(
+        required=False,
+        default="multiple_choice",
+        choices=["multiple_choice", "true_false", "fill_in_blank", "matching", "mixed"]
+    )
+    content = serializers.JSONField(required=False, allow_null=True)
+
+    def validate(self, data):
+        # Ensure language is properly handled
+        if 'language' in self.initial_data:
+            data['language'] = self.initial_data['language']
+        return data
 
 class TextInputSerializer(serializers.Serializer):
     text = serializers.CharField(required=True)

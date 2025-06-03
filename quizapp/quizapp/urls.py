@@ -59,10 +59,14 @@ urlpatterns = [
     path('api/forgot-password/', forgot_password, name='forgot_password'),
     path('api/verify-otp/', verify_otp, name='verify_otp'),
     path('api/reset-password/', reset_password, name='reset_password'),
-    # Your existing API endpoints
+    # API endpoints
     path('api/', include('api.urls')),
-    # Chat PDF endpoints
-    path('api/chat/', include('api.urls')),
+    # Swagger documentation
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Serve static files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

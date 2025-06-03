@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from api.models.quiz_models import Quiz, QuizQuestion, Flashcard, ConciseNote
+from api.models.youtube_models import YouTubeContent
 from api.serializers.quiz_serializers import QuizSerializer, QuizQuestionSerializer, FlashcardSerializer, ConciseNoteSerializer
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -9,7 +10,11 @@ class QuizViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Quiz.objects.filter(user=self.request.user).order_by('-created_at')
+        # Get all quizzes for the user that are not from YouTube
+        return Quiz.objects.filter(
+            user=self.request.user,
+            description__isnull=False  # PDF quizzes typically have a description
+        ).order_by('-created_at')
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -33,7 +38,7 @@ class QuizViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def recent(self, request):
-        recent_quizzes = self.get_queryset()[:5]
+        recent_quizzes = self.get_queryset()[:4]
         serializer = self.get_serializer(recent_quizzes, many=True)
         data = serializer.data
         # Include questions for each quiz

@@ -9,7 +9,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -72,14 +72,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Authentication confirmed, navigating to dashboard');
         // Store email in localStorage
         localStorage.setItem('email', email);
-        navigate('/');
+        return true;
       } else {
         console.log('Authentication failed after successful login');
-        throw new Error('Failed to authenticate after login');
+        const errorMessage = 'Failed to authenticate after login';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       console.error('Login error in AuthContext:', error);
-      setError(error.message);
+      // Extract the error message from the error object
+      const errorMessage = error.response?.data?.detail || error.message || 'Invalid email or password';
+      setError(errorMessage);
+      // Re-throw the error to be caught by the Login component
       throw error;
     }
   };
@@ -95,15 +100,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Authentication confirmed, navigating to dashboard');
         // Store email in localStorage
         localStorage.setItem('email', email);
-        navigate('/');
+        return true;
       } else {
         console.log('Authentication failed after successful signup');
-        throw new Error('Failed to authenticate after signup');
+        const errorMessage = 'Failed to authenticate after signup';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       console.error('Signup error in AuthContext:', error);
-      setError(error.message);
-      throw error;
+      const errorMessage = error.message || 'Failed to create account';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

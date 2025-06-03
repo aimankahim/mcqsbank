@@ -23,8 +23,21 @@ from pydantic import BaseModel, Field
 from langchain.schema.runnable import RunnableBranch, RunnablePassthrough
 from dotenv import load_dotenv
 import asyncio
+import logging
+from .chains.youtube import generate
+import re
+from rest_framework.permissions import IsAuthenticated
+from docx import Document
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import io
+from datetime import datetime
+from rest_framework.decorators import api_view, permission_classes
+from .models import YouTubeContent
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Create uploads directory if it doesn't exist
 UPLOAD_DIR = os.path.join(settings.BASE_DIR, 'uploads')
@@ -288,3 +301,160 @@ class ChatView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+def extract_video_id(url_or_id: str) -> str:
+    """Extract video ID from YouTube URL or return the ID if it's already just an ID."""
+    # If it's already just an ID (no URL), return it
+    if not ('youtube.com' in url_or_id or 'youtu.be' in url_or_id):
+        return url_or_id
+        
+    # Regular expressions for different YouTube URL formats
+    patterns = [
+        r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?]+)',
+        r'youtube\.com\/embed\/([^&\n?]+)',
+        r'youtube\.com\/v\/([^&\n?]+)'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url_or_id)
+        if match:
+            return match.group(1)
+    return None
+
+class YouTubeQuizView(APIView):
+    def post(self, request):
+        try:
+            video_id = request.data.get('video_id')
+            if not video_id:
+                logger.error("No video_id provided in request")
+                return Response(
+                    {'error': 'video_id is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Extract video ID from URL if needed
+            video_id = extract_video_id(video_id)
+            if not video_id:
+                logger.error("Invalid YouTube URL or video ID")
+                return Response(
+                    {'error': 'Invalid YouTube URL or video ID'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            logger.info(f"Processing quiz request for video_id: {video_id}")
+            result = generate(video_id, 'quiz')
+            logger.info("Successfully generated quiz")
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error in YouTubeQuizView: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class YouTubeFlashcardsView(APIView):
+    def post(self, request):
+        try:
+            video_id = request.data.get('video_id')
+            if not video_id:
+                logger.error("No video_id provided in request")
+                return Response(
+                    {'error': 'video_id is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Extract video ID from URL if needed
+            video_id = extract_video_id(video_id)
+            if not video_id:
+                logger.error("Invalid YouTube URL or video ID")
+                return Response(
+                    {'error': 'Invalid YouTube URL or video ID'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            logger.info(f"Processing flashcards request for video_id: {video_id}")
+            result = generate(video_id, 'flashcards')
+            logger.info("Successfully generated flashcards")
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error in YouTubeFlashcardsView: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class YouTubeNotesView(APIView):
+    def post(self, request):
+        try:
+            video_id = request.data.get('video_id')
+            if not video_id:
+                logger.error("No video_id provided in request")
+                return Response(
+                    {'error': 'video_id is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Extract video ID from URL if needed
+            video_id = extract_video_id(video_id)
+            if not video_id:
+                logger.error("Invalid YouTube URL or video ID")
+                return Response(
+                    {'error': 'Invalid YouTube URL or video ID'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            logger.info(f"Processing notes request for video_id: {video_id}")
+            result = generate(video_id, 'notes')
+            logger.info("Successfully generated notes")
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error in YouTubeNotesView: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class YouTubeChatView(APIView):
+    def post(self, request):
+        try:
+            video_id = request.data.get('video_id')
+            if not video_id:
+                logger.error("No video_id provided in request")
+                return Response(
+                    {'error': 'video_id is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Extract video ID from URL if needed
+            video_id = extract_video_id(video_id)
+            if not video_id:
+                logger.error("Invalid YouTube URL or video ID")
+                return Response(
+                    {'error': 'Invalid YouTube URL or video ID'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            logger.info(f"Processing chat request for video_id: {video_id}")
+            result = generate(video_id, 'chat')
+            logger.info("Successfully generated chat content")
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error in YouTubeChatView: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def youtube_history(request):
+    try:
+        # Get all YouTube content for the current user
+        content = YouTubeContent.objects.filter(user=request.user)
+        return Response([item.to_dict() for item in content])
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)

@@ -5,6 +5,11 @@ interface PDFInput {
   pdf_id: string;
   num_items?: number;
   difficulty?: string;
+  language?: string;
+  quiz_type?: string;
+  content?: {
+    quiz_type?: string;
+  };
 }
 
 interface FlashcardItem {
@@ -25,7 +30,9 @@ interface Quiz {
     question: string;
     options: string[];
     correct_answer: string;
+    statement?: string;  // For true/false questions, this will be the statement to evaluate
   }>;
+  quiz_type?: string;
 }
 
 interface GenerateNotesRequest {
@@ -87,7 +94,29 @@ class LearningService {
   }
 
   async generateQuiz(input: PDFInput): Promise<Quiz> {
-    return this.makeRequest<Quiz>('/learning/generate-quiz/', input);
+    console.log('Generating quiz with input:', input); // Debug log
+    
+    // For true/false questions, ensure we're sending the correct format
+    if (input.quiz_type === 'true_false') {
+      const transformedInput = {
+        ...input,
+        content: {
+          ...input.content,
+          quiz_type: 'true_false',
+          format: 'statement'  // Indicate we want statements for true/false evaluation
+        }
+      };
+      return this.makeRequest<Quiz>('/learning/generate-quiz/', transformedInput);
+    }
+    
+    // Ensure language is included in the request
+    const requestData = {
+      ...input,
+      language: input.language || 'English'  // Ensure language is always set
+    };
+    
+    console.log('Sending quiz request with data:', requestData); // Debug log
+    return this.makeRequest<Quiz>('/learning/generate-quiz/', requestData);
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {

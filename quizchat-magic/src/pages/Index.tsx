@@ -12,7 +12,7 @@ const Index = () => {
       {/* Header/Navigation */}
       <header className="w-full py-4 px-6 flex items-center justify-between border-b bg-white/80 backdrop-blur-sm">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gradient">EDUFLEX</h1>
+          <h1 className="text-2xl font-bold text-gradient">AI Quizz Managamment</h1>
         </div>
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={() => navigate('/login')}>Login</Button>
@@ -41,7 +41,7 @@ const Index = () => {
       {/* Features Section */}
       <section className="py-20 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-16">How EDUFLEX Works</h2>
+          <h2 className="text-3xl font-bold text-center mb-16">How AI Quizz Managamment Works</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div className="flex flex-col items-center text-center">
@@ -167,7 +167,7 @@ const Index = () => {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Transform Your Learning Experience?</h2>
           <p className="text-xl text-gray-600 mb-10">
-            Join thousands of students and professionals who are using EDUFLEX to study smarter, not harder.
+            Join thousands of students and professionals who are using AI Quizz Managamment to study smarter, not harder.
           </p>
           <Button size="lg" className="bg-brand-600 hover:bg-brand-700" onClick={() => navigate('/login')}>
             Get Started for Free
@@ -179,7 +179,7 @@ const Index = () => {
       <footer className="py-8 px-6 bg-white border-t">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
-            <h1 className="text-xl font-bold text-gradient">EDUFLEX</h1>
+            <h1 className="text-xl font-bold text-gradient">AI Quizz Managamment</h1>
             <p className="text-sm text-gray-500">Transform your PDFs into interactive learning materials</p>
           </div>
           <div className="flex space-x-6">

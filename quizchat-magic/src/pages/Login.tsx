@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, BrainCircuit, MessageSquare } from 'lucide-react';
 import { authService } from '@/services/auth';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const Login: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('login');
@@ -17,8 +19,9 @@ const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [usernameExists, setUsernameExists] = useState<boolean>(false);
+  const [showAlert, setShowAlert] = useState<boolean>(false);
   
-  const { login, signup, clearError, isAuthenticated } = useAuth();
+  const { login, signup, clearError, isAuthenticated, error: authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,9 +33,18 @@ const Login: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Handle auth context errors
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      setShowAlert(true);
+    }
+  }, [authError]);
+
   // Clear error when switching tabs
   useEffect(() => {
     setError('');
+    setShowAlert(false);
     clearError();
   }, [activeTab, clearError]);
 
@@ -61,32 +73,66 @@ const Login: React.FC = () => {
       checkUsername();
     }
   }, [name, activeTab]);
+
+  // Show alert when error occurs
+  useEffect(() => {
+    if (error) {
+      setShowAlert(true);
+      // Hide alert after 5 seconds
+      const timer = setTimeout(() => {
+        setShowAlert(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (activeTab === 'signup' && usernameExists) {
       setError('Please choose a different name');
+      setShowAlert(true);
       return;
     }
     
     setIsSubmitting(true);
     setError('');
+    setShowAlert(false);
     
     try {
       console.log('Form submitted:', { activeTab, email });
       if (activeTab === 'login') {
-        await login(email, password);
+        try {
+          await login(email, password);
+          // Only navigate if login was successful
+          if (isAuthenticated) {
+            navigate('/');
+          }
+        } catch (loginError: any) {
+          console.error('Login error:', loginError);
+          // Extract the error message from the error object
+          const errorMessage = loginError.response?.data?.detail || loginError.message || 'Invalid email or password';
+          setError(errorMessage);
+          setShowAlert(true);
+        }
       } else {
-        await signup(email, password, name);
+        try {
+          await signup(email, password, name);
+          if (isAuthenticated) {
+            navigate('/');
+          }
+        } catch (signupError: any) {
+          console.error('Signup error:', signupError);
+          const errorMessage = signupError.response?.data?.detail || signupError.message || 'Failed to create account';
+          setError(errorMessage);
+          setShowAlert(true);
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Form submission error:', err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unexpected error occurred');
-      }
+      const errorMessage = err.response?.data?.detail || err.message || 'An unexpected error occurred';
+      setError(errorMessage);
+      setShowAlert(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,16 +140,31 @@ const Login: React.FC = () => {
 
   // Clear error when user starts typing
   const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>, value: string) => {
-    setError('');
-    clearError();
     setter(value);
+    // Only clear error if user has typed something
+    if (value.trim()) {
+      setError('');
+      setShowAlert(false);
+      clearError();
+    }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-purple-50 flex flex-col items-center justify-center p-4">
+      {showAlert && (
+        <div className="fixed top-4 right-4 z-50 animate-fadeIn">
+          <Alert variant="destructive" className="bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-red-700">
+              {error || 'An error occurred. Please try again.'}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+      
       <div className="max-w-md w-full space-y-8 animate-fadeIn">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gradient mb-2">EDUFLEX</h1>
+          <h1 className="text-4xl font-bold text-gradient mb-2">AI Quiz Management</h1>
           <p className="text-gray-600">Transform your PDFs into interactive learning materials</p>
         </div>
         
@@ -175,12 +236,6 @@ const Login: React.FC = () => {
                       required
                     />
                   </div>
-                  
-                  {error && (
-                    <div className="text-sm text-red-500 bg-red-50 p-2 rounded border border-red-200">
-                      {error}
-                    </div>
-                  )}
                 </CardContent>
                 
                 <CardFooter>
@@ -209,7 +264,6 @@ const Login: React.FC = () => {
                       value={name}
                       onChange={(e) => handleInputChange(setName, e.target.value)}
                       required
-                      className={usernameExists ? 'border-red-500' : ''}
                     />
                   </div>
                   
@@ -236,17 +290,11 @@ const Login: React.FC = () => {
                       required
                     />
                   </div>
-                  
-                  {error && (
-                    <div className="text-sm text-red-500 bg-red-50 p-2 rounded border border-red-200">
-                      {error}
-                    </div>
-                  )}
                 </CardContent>
                 
                 <CardFooter>
-                  <Button className="w-full" type="submit" disabled={isSubmitting || usernameExists}>
-                    {isSubmitting ? 'Creating account...' : 'Sign Up'}
+                  <Button className="w-full" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Creating account...' : 'Create account'}
                   </Button>
                 </CardFooter>
               </form>

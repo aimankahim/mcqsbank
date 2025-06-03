@@ -11,6 +11,13 @@ from .views.chat_views import (
     PDFDownloadView as ChatPDFDownloadView,
     PDFDeleteView as ChatPDFDeleteView
 )
+from .views.youtube_views import (
+    YouTubeProcessView, 
+    YouTubeNotesDownloadView, 
+    YouTubeChatMessageView,
+    youtube_history
+)
+from . import views
 
 router = DefaultRouter()
 router.register(r'quizzes', QuizViewSet, basename='quiz')
@@ -32,6 +39,15 @@ urlpatterns = [
     path('chat/pdf/<uuid:pdf_id>/download/', ChatPDFDownloadView.as_view(), name='chat-pdf-download'),
     path('chat/pdf/<uuid:pdf_id>/delete/', ChatPDFDeleteView.as_view(), name='chat-pdf-delete'),
     path('chat/', ChatView.as_view(), name='chat'),
+    
+    # YouTube endpoints
+    path('youtube/quiz/', YouTubeProcessView.as_view(), name='youtube-quiz'),
+    path('youtube/flashcards/', YouTubeProcessView.as_view(), name='youtube-flashcards'),
+    path('youtube/notes/', YouTubeProcessView.as_view(), name='youtube-notes'),
+    path('youtube/chat/', YouTubeProcessView.as_view(), name='youtube-chat'),
+    path('youtube/chat/message/', YouTubeChatMessageView.as_view(), name='youtube-chat-message'),
+    path('youtube/notes/download/', YouTubeNotesDownloadView.as_view(), name='youtube-notes-download'),
+    path('youtube/history/', youtube_history, name='youtube_history'),
     
     # Learning endpoints
     path('learning/generate-notes/', LearningAPIView.as_view(), name='generate-notes'),

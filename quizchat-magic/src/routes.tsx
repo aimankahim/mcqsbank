@@ -17,6 +17,7 @@ import NoteView from '@/pages/NoteView';
 import Chat from '@/pages/Chat';
 import NotFound from '@/pages/NotFound';
 import ForgotPassword from '@/pages/ForgotPassword';
+import YouTubeVideo from '@/pages/YouTubeVideo';
 
 const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
   const { isAuthenticated } = useAuth();
@@ -30,6 +31,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
       <Route path="/upload" element={<PrivateRoute element={<Upload />} />} />
+      <Route path="/youtube" element={<PrivateRoute element={<YouTubeVideo />} />} />
       <Route path="/pdfs" element={<PrivateRoute element={<PDFList />} />} />
       <Route path="/pdfs/:id" element={<PrivateRoute element={<PDFView />} />} />
       <Route path="/flashcards" element={<PrivateRoute element={<Flashcards />} />} />

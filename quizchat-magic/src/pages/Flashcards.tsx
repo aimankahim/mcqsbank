@@ -47,7 +47,8 @@ import {
   ChevronRight,
   Wand2,
   Upload,
-  Brain
+  Brain,
+  Repeat
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
@@ -73,6 +74,24 @@ const Flashcards: React.FC = () => {
     const pdfId = params.get('pdfId');
     const flashcardId = params.get('flashcard');
     
+    // Check for YouTube-generated flashcards
+    if (location.state?.fromYouTube && location.state?.flashcardsData) {
+      const youtubeFlashcards = location.state.flashcardsData;
+      // Add each flashcard to the state
+      youtubeFlashcards.cards.forEach((card: any) => {
+        addFlashCard({
+          pdfId: 'youtube',
+          front: card.front,
+          back: card.back,
+        });
+      });
+      
+      toast({
+        title: "Flashcards Added",
+        description: `${youtubeFlashcards.cards.length} flashcards have been added to your collection.`,
+      });
+    }
+    
     if (pdfId && pdfs.find(p => p.id === pdfId)) {
       setSelectedPdfId(pdfId);
       
@@ -88,7 +107,7 @@ const Flashcards: React.FC = () => {
     } else if (pdfs.length > 0 && !selectedPdfId) {
       setSelectedPdfId(pdfs[0].id);
     }
-  }, [location.search, pdfs, selectedPdfId, getFlashcardsByPDF, updateFlashcardLastViewed]);
+  }, [location.search, location.state, pdfs, selectedPdfId, getFlashcardsByPDF, updateFlashcardLastViewed, addFlashCard, toast]);
   
   // Get flashcards for the selected PDF
   const filteredFlashcards = selectedPdfId 
@@ -212,22 +231,39 @@ const Flashcards: React.FC = () => {
   
   return (
     <MainLayout>
-      <div className="animate-fadeIn">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Flashcards</h1>
-            <p className="text-muted-foreground">
-              Create and study flashcards from your PDFs
+      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-purple-50 to-blue-50">
+        <div className="container mx-auto px-4 py-8">
+          {/* Hero Section */}
+          <div className="text-center mb-12 space-y-4">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+              Smart Flashcards
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Create and study flashcards with AI-powered content generation
             </p>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="max-w-6xl mx-auto">
+            {/* Header Section */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                    <Brain className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Create Flashcards</h2>
+                    <p className="text-gray-600">Select a PDF and generate or create flashcards</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-4">
             {isLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-500"></div>
             ) : pdfs.length > 0 ? (
               <>
                 <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
-                  <SelectTrigger className="w-[250px]">
+                        <SelectTrigger className="w-[250px] h-12 bg-white/50 backdrop-blur-sm border-2 focus:border-brand-500">
                     <SelectValue placeholder="Select a PDF" />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,27 +277,27 @@ const Flashcards: React.FC = () => {
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="flex items-center">
-                      <Wand2 className="h-4 w-4 mr-2" />
+                          <Button className="h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                            <Wand2 className="h-5 w-5 mr-2" />
                       Generate
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                        <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Generate Flashcards</DialogTitle>
-                      <DialogDescription>
-                        Generate flashcards from your PDF content
+                            <DialogTitle className="text-2xl font-bold">Generate Flashcards</DialogTitle>
+                            <DialogDescription className="text-base">
+                              Choose the number of flashcards to generate
                       </DialogDescription>
                     </DialogHeader>
                     
-                    <div className="space-y-4 py-4">
+                          <div className="py-6">
                       <div className="space-y-2">
-                        <Label>Number of Flashcards</Label>
+                              <Label className="text-base font-medium">Number of Flashcards</Label>
                         <Select 
                           value={numFlashcards.toString()} 
                           onValueChange={(value) => setNumFlashcards(parseInt(value))}
                         >
-                          <SelectTrigger>
+                                <SelectTrigger className="h-12">
                             <SelectValue placeholder="Select number of flashcards" />
                           </SelectTrigger>
                           <SelectContent>
@@ -278,15 +314,16 @@ const Flashcards: React.FC = () => {
                       <Button 
                         onClick={generateFlashcards}
                         disabled={isGenerating}
+                              className="h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600"
                       >
                         {isGenerating ? (
                           <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
                             Generating...
                           </>
                         ) : (
                           <>
-                            <Wand2 className="h-4 w-4 mr-2" />
+                                  <Wand2 className="h-5 w-5 mr-2" />
                             Generate
                           </>
                         )}
@@ -294,58 +331,66 @@ const Flashcards: React.FC = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-              </>
-            ) : (
-              <Button 
-                variant="outline" 
-                className="flex items-center" 
-                onClick={() => navigate('/upload')}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload PDF
-              </Button>
-            )}
             
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="flex items-center">
-                  <Plus className="h-4 w-4 mr-2" />
+                          <Button className="h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                            <Plus className="h-5 w-5 mr-2" />
                   New Flashcard
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+                        <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Create New Flashcard</DialogTitle>
-                  <DialogDescription>
+                            <DialogTitle className="text-2xl font-bold">Create New Flashcard</DialogTitle>
+                            <DialogDescription className="text-base">
                     Add a new flashcard to your collection
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="space-y-4 py-4">
+                          <div className="space-y-4 py-6">
                   <div className="space-y-2">
-                    <Label>Front</Label>
+                              <Label className="text-base font-medium">Front</Label>
                     <Textarea
                       placeholder="Enter the question or prompt"
                       value={newCardFront}
                       onChange={(e) => setNewCardFront(e.target.value)}
+                                className="min-h-[100px] resize-none"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Back</Label>
+                              <Label className="text-base font-medium">Back</Label>
                     <Textarea
                       placeholder="Enter the answer or explanation"
                       value={newCardBack}
                       onChange={(e) => setNewCardBack(e.target.value)}
+                                className="min-h-[100px] resize-none"
                     />
                   </div>
                 </div>
                 
                 <DialogFooter>
-                  <Button onClick={handleNewCardSubmit}>Create Flashcard</Button>
+                            <Button 
+                              onClick={handleNewCardSubmit}
+                              className="h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600"
+                            >
+                              Create Flashcard
+                            </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+                    </>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="h-12 flex items-center space-x-2 border-2 hover:border-brand-500 hover:bg-brand-50"
+                      onClick={() => navigate('/upload')}
+                    >
+                      <Upload className="h-5 w-5" />
+                      <span>Upload PDF</span>
+                    </Button>
+                  )}
+                </div>
           </div>
         </div>
         
@@ -356,6 +401,7 @@ const Flashcards: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setStudyMode(!studyMode)}
+                    className="h-10 hover:bg-brand-50 hover:text-brand-600"
               >
                 <BookOpen className="h-4 w-4 mr-2" />
                 {studyMode ? 'Exit Study Mode' : 'Study Mode'}
@@ -370,6 +416,7 @@ const Flashcards: React.FC = () => {
                       setActiveCardIndex(0);
                       setIsFlipped(false);
                     }}
+                        className="h-10 hover:bg-brand-50 hover:text-brand-600"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Reset
@@ -379,42 +426,43 @@ const Flashcards: React.FC = () => {
             </div>
             
             {filteredFlashcards.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Brain className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No flashcards yet</h3>
-                  <p className="text-muted-foreground text-center">
-                    Create your first flashcard or generate them from your PDF
+                  <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                    <CardContent className="flex flex-col items-center justify-center py-16">
+                      <Brain className="h-16 w-16 text-brand-500 mb-4" />
+                      <h3 className="text-2xl font-bold mb-2">No flashcards yet</h3>
+                      <p className="text-gray-600 text-center max-w-md">
+                        Create your first flashcard or generate them from your PDF content
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="relative">
-                  <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 relative overflow-hidden group">
+                      <CardContent className="p-8">
                     <div 
-                      className={`transition-transform duration-500 transform ${
+                          className={`transition-all duration-500 transform perspective-1000 ${
                         isFlipped ? 'rotate-y-180' : ''
                       }`}
                       onClick={handleCardFlip}
                     >
-                      <div className={`${isFlipped ? 'hidden' : ''}`}>
-                        <h3 className="text-lg font-medium mb-4">Front</h3>
-                        <p className="text-lg">{filteredFlashcards[activeCardIndex].front}</p>
+                          <div className={`${isFlipped ? 'hidden' : 'block'} backface-hidden`}>
+                            <h3 className="text-lg font-medium mb-4 text-brand-600">Front</h3>
+                            <p className="text-xl leading-relaxed">{filteredFlashcards[activeCardIndex].front}</p>
                       </div>
-                      <div className={`${!isFlipped ? 'hidden' : ''}`}>
-                        <h3 className="text-lg font-medium mb-4">Back</h3>
-                        <p className="text-lg">{filteredFlashcards[activeCardIndex].back}</p>
+                          <div className={`${!isFlipped ? 'hidden' : 'block'} backface-hidden`}>
+                            <h3 className="text-lg font-medium mb-4 text-brand-600">Back</h3>
+                            <p className="text-xl leading-relaxed">{filteredFlashcards[activeCardIndex].back}</p>
                       </div>
                     </div>
                   </CardContent>
                   
                   {!studyMode && (
-                    <CardFooter className="flex justify-end">
+                        <CardFooter className="flex justify-end p-4 border-t">
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteCard(activeCardIndex)}
+                            className="h-10 hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -423,33 +471,55 @@ const Flashcards: React.FC = () => {
                   )}
                 </Card>
                 
-                <div className="flex items-center justify-center space-x-4">
+                    <div className="flex flex-col items-center justify-center space-y-6">
+                      <div className="flex items-center space-x-6">
                   <Button
                     variant="outline"
                     size="lg"
                     onClick={prevCard}
                     disabled={activeCardIndex === 0}
+                          className="h-16 w-16 rounded-full hover:bg-brand-50 hover:text-brand-600"
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                          <ChevronLeft className="h-8 w-8" />
                   </Button>
                   
-                  <span className="text-lg font-medium">
-                    {activeCardIndex + 1} / {filteredFlashcards.length}
+                        <div className="text-center">
+                          <span className="text-2xl font-bold text-brand-600">
+                            {activeCardIndex + 1}
+                          </span>
+                          <span className="text-gray-400 mx-2">/</span>
+                          <span className="text-2xl font-bold text-gray-600">
+                            {filteredFlashcards.length}
                   </span>
+                        </div>
                   
                   <Button
                     variant="outline"
                     size="lg"
                     onClick={nextCard}
                     disabled={activeCardIndex === filteredFlashcards.length - 1}
+                          className="h-16 w-16 rounded-full hover:bg-brand-50 hover:text-brand-600"
                   >
-                    <ChevronRight className="h-6 w-6" />
+                          <ChevronRight className="h-8 w-8" />
+                        </Button>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={handleCardFlip}
+                        className="h-12 hover:bg-brand-50 hover:text-brand-600"
+                      >
+                        <Repeat className="h-5 w-5 mr-2" />
+                        Flip Card
                   </Button>
                 </div>
               </div>
             )}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
