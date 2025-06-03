@@ -6513,3 +6513,7 @@ TypeError: can only concatenate str (not "NoneType") to str
 2025-06-03 13:18:50,328 - api.chains.youtube - INFO - YouTube Content Generator application started
 2025-06-03 13:18:50,416 - api.chains.youtube - INFO - Environment variables loaded
 2025-06-03 13:18:50,482 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 13:26:12,178 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 13:26:12,324 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 13:26:12,325 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 13:26:12,454 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
