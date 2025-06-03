@@ -3510,3 +3510,48 @@ TypeError: can only concatenate str (not "NoneType") to str
 2025-06-03 13:26:12,325 - api.chains.youtube - INFO - Environment variables loaded
 2025-06-03 13:26:12,454 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
 2025-06-03 13:26:12,454 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:01:26,425 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:01:26,553 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:01:26,647 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:03:00,076 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:03:00,175 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:03:00,253 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:03:01,026 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:03:01,082 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:03:01,128 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:04:00,712 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:04:00,799 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:04:00,878 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:05:02,762 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:05:02,762 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:05:02,850 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:05:02,851 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:05:02,913 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:05:02,913 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:06:15,052 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:06:15,161 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:06:15,246 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:09:25,947 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:09:26,101 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:09:26,213 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:09:27,346 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:09:27,410 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:09:27,459 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:09:41,236 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:09:41,308 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:09:41,364 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:09:41,847 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:09:41,967 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:09:42,028 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:09:53,387 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:09:53,450 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:09:53,501 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:09:53,738 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:09:53,806 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:09:53,887 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:10:02,872 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:10:02,963 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:10:03,033 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-03 14:10:03,264 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-03 14:10:03,330 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-03 14:10:03,394 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully

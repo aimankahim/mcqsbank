@@ -197,14 +197,15 @@ class PDFUploadView(views.APIView):
             # Create PDF document record
             pdf_doc = PDFDocument.objects.create(
                 title=pdf_file.name,
-                file=file_path,
-                processed=False
+                file=pdf_file,  # Pass the file object directly
+                processed=False,
+                user=request.user
             )
             
             try:
                 # Load and split the PDF with optimized parameters
                 logger.info("Loading PDF with PyPDFLoader")
-                loader = PyPDFLoader(file_path)
+                loader = PyPDFLoader(pdf_doc.file.path)  # Use the file path from the model
                 documents = loader.load()
                 
                 logger.info("Splitting PDF content")

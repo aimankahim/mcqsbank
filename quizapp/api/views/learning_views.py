@@ -88,7 +88,7 @@ class LearningAPIView(APIView):
                 raise FileNotFoundError("PDF file not found in database")
             
             # Get the absolute path of the file
-            file_path = pdf.file.path
+            file_path = pdf.get_file_path()
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"PDF file not found at path: {file_path}")
             
