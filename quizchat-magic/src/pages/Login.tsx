@@ -164,7 +164,7 @@ const Login: React.FC = () => {
       
       <div className="max-w-md w-full space-y-8 animate-fadeIn">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gradient mb-2">AI Quiz Management</h1>
+          <h1 className="text-4xl font-bold text-gradient mb-2">EDUFLEX</h1>
           <p className="text-gray-600">Transform your PDFs into interactive learning materials</p>
         </div>
         

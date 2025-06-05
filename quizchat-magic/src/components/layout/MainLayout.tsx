@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,11 @@ import {
   Upload,
   BookOpen,
   Youtube,
-  GraduationCap
+  GraduationCap,
+  Menu,
+  X
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -24,6 +27,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { icon: <Home size={20} />, label: 'Dashboard', path: '/' },
@@ -33,75 +37,86 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { icon: <BrainCircuit size={20} />, label: 'Flashcards', path: '/flashcards' },
     { icon: <ScrollText size={20} />, label: 'Quizzes', path: '/quizzes' },
     { icon: <BookOpen size={20} />, label: 'Notes', path: '/notes' },
-    { icon: <Youtube size={20} />, label: 'YouTube', path: '/youtube' },
   ];
 
   const handleNavigation = (path: string) => {
     navigate(path);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen flex bg-background">
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 right-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </Button>
+      </div>
+
       {/* Sidebar */}
-      <div className="w-72 bg-gradient-to-b from-brand-50 to-purple-50 border-r border-border/50 shadow-lg flex flex-col">
-        {/* Logo Section */}
-        <div className="p-6 border-b border-border/50">
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center shadow-lg">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-              AI Quizz Managamment
-            </h1>
-          </div>
-        </div>
-        
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => handleNavigation(item.path)}
-              className={`w-full flex items-center px-4 py-3 rounded-xl text-sm transition-all duration-200
-                ${location.pathname === item.path 
-                  ? 'bg-gradient-to-r from-brand-500 to-purple-500 text-white shadow-lg scale-[1.02]' 
-                  : 'text-gray-700 hover:bg-white/50 hover:shadow-md'
-                }`}
-            >
-              <span className={`mr-3 ${location.pathname === item.path ? 'text-white' : 'text-brand-600'}`}>
-                {item.icon}
-              </span>
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        
-        {/* User Profile Section */}
-        <div className="p-6 border-t border-border/50">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg mb-4">
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0',
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* User Profile Section */}
+          <div className="p-4 border-b">
             <div className="flex items-center space-x-3">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center shadow-lg">
-                <User size={24} className="text-white" />
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <User size={20} className="text-primary" />
               </div>
-              <div>
-                <p className="font-semibold text-gray-900">{user?.username || 'User'}</p>
-                <p className="text-sm text-gray-600">{user?.email || ''}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.username || user?.email || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.email}
+                </p>
               </div>
             </div>
           </div>
-          
-          <Button 
-            variant="ghost"
-            size="lg"
-            className="w-full flex items-center justify-center bg-white/80 backdrop-blur-sm hover:bg-white/90 text-gray-700 hover:text-brand-600 shadow-lg rounded-xl transition-all duration-200"
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-          >
-            <LogOut size={20} className="mr-2" />
-            Log out
-          </Button>
+
+          <div className="flex-1 px-4 py-6">
+            <nav className="space-y-2">
+              {menuItems.map((item) => (
+                <Button
+                  key={item.path}
+                  variant={location.pathname === item.path ? 'secondary' : 'ghost'}
+                  className={cn(
+                    'w-full justify-start',
+                    location.pathname === item.path && 'bg-gray-100'
+                  )}
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  {item.icon}
+                  <span className="ml-3">{item.label}</span>
+                </Button>
+              ))}
+            </nav>
+          </div>
+          <div className="p-4 border-t">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut size={20} />
+              <span className="ml-3">Logout</span>
+            </Button>
+          </div>
         </div>
       </div>
       

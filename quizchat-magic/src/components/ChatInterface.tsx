@@ -25,7 +25,7 @@ export default function ChatInterface() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { addPDF, getPDFById } = usePDF();
+  const { addPDF, getPDFById, uploadPDF } = usePDF();
 
   // Get PDF ID from URL when component mounts
   useEffect(() => {
@@ -67,11 +67,8 @@ export default function ChatInterface() {
     setIsUploading(true);
     
     try {
-      // First, upload to chat service
-      const chatPdfId = await chatService.uploadPDF(file);
-      
-      // Then, add to PDF context
-      await addPDF(file);
+      // Upload PDF using the PDF context's uploadPDF function
+      const chatPdfId = await uploadPDF(file);
       
       setPdfId(chatPdfId);
       

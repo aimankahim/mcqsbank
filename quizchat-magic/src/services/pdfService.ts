@@ -17,7 +17,7 @@ const isAxiosError = (error: any): error is { response?: { data?: ApiError } } =
 };
 
 class PDFService {
-  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
+  private baseURL = 'http://127.0.0.1:8000/api';
 
   async getPDFs(): Promise<PDF[]> {
     try {
@@ -26,7 +26,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/chat/pdfs/`, {
+      const response = await axios.get(`${this.baseURL}/pdfs/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -56,7 +56,7 @@ class PDFService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post(`${this.baseURL}/pdfs/upload/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -88,7 +88,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(`${this.baseURL}/chat/pdf/${pdfId}/delete/`, {
+      await axios.delete(`${this.baseURL}/pdfs/${pdfId}/delete/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -113,7 +113,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/chat/pdf/${pdfId}/download/`, {
+      const response = await axios.get(`${this.baseURL}/pdfs/${pdfId}/download/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -135,6 +135,34 @@ class PDFService {
         const errorMessage = error.response?.data?.error || 
                            error.response?.data?.detail || 
                            'Failed to download PDF';
+        throw new Error(errorMessage);
+      }
+      throw error;
+    }
+  }
+
+  async getPDFForViewing(pdfId: string): Promise<string> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/pdfs/${pdfId}/download/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        responseType: 'blob'
+      });
+
+      // Create a URL for the blob
+      return window.URL.createObjectURL(new Blob([response.data as BlobPart]));
+    } catch (error) {
+      console.error('Error getting PDF for viewing:', error);
+      if (isAxiosError(error)) {
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.detail || 
+                           'Failed to get PDF for viewing';
         throw new Error(errorMessage);
       }
       throw error;

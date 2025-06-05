@@ -30,8 +30,9 @@ const PDFView: React.FC = () => {
         if (!currentPdf) throw new Error('PDF not found');
         setPdf(currentPdf);
         
-        // Create a blob URL for the PDF
-        await pdfService.downloadPDF(id, currentPdf.title);
+        // Get PDF URL for viewing
+        const url = await pdfService.getPDFForViewing(id);
+        setPdfUrl(url);
       } catch (error) {
         console.error('Error loading PDF:', error);
         toast({

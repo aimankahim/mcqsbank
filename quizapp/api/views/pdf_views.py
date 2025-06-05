@@ -57,8 +57,8 @@ class PDFListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Filter PDFs by the current user
-        pdfs = PDFDocument.objects.filter(user=request.user, processed=True).order_by('-uploaded_at')
+        # Filter PDFs by the current user, show all PDFs regardless of processed status
+        pdfs = PDFDocument.objects.filter(user=request.user).order_by('-uploaded_at')
         data = [{
             'id': str(pdf.id),
             'title': pdf.title,

@@ -1,10 +1,9 @@
 from django.contrib import admin
+from api.models import QuizModel, QuizQuestion, Flashcard, ConciseNote, PDF
 
 # Register your models here.
-from api.models.quiz_models import Quiz, QuizQuestion, Flashcard, ConciseNote
-from api.models import YouTubeContent
-admin.site.register(Quiz)
-admin.site.register(QuizQuestion)   
+admin.site.register(QuizModel)
+admin.site.register(QuizQuestion)
 admin.site.register(Flashcard)
 admin.site.register(ConciseNote)
-admin.site.register(YouTubeContent)
+admin.site.register(PDF)

@@ -1,52 +1,57 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from api.models.quiz_models import Quiz, QuizQuestion, Flashcard, ConciseNote
-from api.models.youtube_models import YouTubeContent
+from api.models.quiz_models import QuizModel, QuizQuestion, Flashcard, ConciseNote
 from api.serializers.quiz_serializers import QuizSerializer, QuizQuestionSerializer, FlashcardSerializer, ConciseNoteSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 class QuizViewSet(viewsets.ModelViewSet):
     serializer_class = QuizSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Get all quizzes for the user that are not from YouTube
-        return Quiz.objects.filter(
-            user=self.request.user,
-            description__isnull=False  # PDF quizzes typically have a description
-        ).order_by('-created_at')
+        logger.info(f"Getting quizzes for user: {self.request.user}")
+        queryset = QuizModel.objects.filter(user=self.request.user).order_by('-created_at')
+        logger.info(f"Found {queryset.count()} quizzes")
+        return queryset
 
     def retrieve(self, request, *args, **kwargs):
+        logger.info(f"Retrieving quiz with ID: {kwargs.get('pk')}")
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        data = serializer.data
-        # Include questions in the response
-        questions = QuizQuestion.objects.filter(quiz=instance)
-        question_serializer = QuizQuestionSerializer(questions, many=True)
-        data['questions'] = question_serializer.data
-        return Response(data)
+        logger.info(f"Quiz data: {serializer.data}")
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def recent(self, request):
+        logger.info("Fetching recent quizzes")
+        try:
+            # Get the 4 most recent quizzes for the user
+            recent_quizzes = QuizModel.objects.filter(
+                user=request.user
+            ).order_by('-created_at')[:4]
+            
+            logger.info(f"Found {recent_quizzes.count()} recent quizzes")
+            
+            # Serialize the quizzes
+            serializer = QuizSerializer(recent_quizzes, many=True)
+            logger.info(f"Serialized quizzes: {serializer.data}")
+            
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching recent quizzes: {str(e)}")
+            return Response([], status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def add_question(self, request, pk=None):
         quiz = self.get_object()
         serializer = QuizQuestionSerializer(data=request.data)
-        
         if serializer.is_valid():
             serializer.save(quiz=quiz)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['get'])
-    def recent(self, request):
-        recent_quizzes = self.get_queryset()[:4]
-        serializer = self.get_serializer(recent_quizzes, many=True)
-        data = serializer.data
-        # Include questions for each quiz
-        for quiz_data in data:
-            questions = QuizQuestion.objects.filter(quiz_id=quiz_data['id'])
-            question_serializer = QuizQuestionSerializer(questions, many=True)
-            quiz_data['questions'] = question_serializer.data
-        return Response(data)
 
 class QuizQuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuizQuestionSerializer
@@ -57,7 +62,7 @@ class QuizQuestionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         quiz_id = self.request.data.get('quiz')
-        quiz = Quiz.objects.get(id=quiz_id, user=self.request.user)
+        quiz = QuizModel.objects.get(id=quiz_id, user=self.request.user)
         serializer.save(quiz=quiz)
 
 class FlashcardViewSet(viewsets.ModelViewSet):

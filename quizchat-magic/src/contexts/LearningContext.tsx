@@ -76,21 +76,39 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Load flashcards from localStorage on mount
   useEffect(() => {
-    const savedFlashcards = localStorage.getItem('flashcards');
-    if (savedFlashcards) {
-      setFlashcards(JSON.parse(savedFlashcards));
+    try {
+      const savedFlashcards = localStorage.getItem('flashcards');
+      if (savedFlashcards) {
+        const parsedFlashcards = JSON.parse(savedFlashcards).map((card: any) => ({
+          ...card,
+          createdAt: new Date(card.createdAt),
+          lastViewed: card.lastViewed ? new Date(card.lastViewed) : undefined
+        }));
+        setFlashcards(parsedFlashcards);
+      }
+    } catch (error) {
+      console.error('Error loading flashcards from localStorage:', error);
+      setFlashcards([]);
     }
   }, []);
 
   // Save flashcards to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('flashcards', JSON.stringify(flashcards));
+    try {
+      localStorage.setItem('flashcards', JSON.stringify(flashcards));
+    } catch (error) {
+      console.error('Error saving flashcards to localStorage:', error);
+    }
   }, [flashcards]);
 
   // Get recent flashcards (last 5 viewed)
   const recentFlashcards = flashcards
     .filter(card => card.lastViewed)
-    .sort((a, b) => (b.lastViewed?.getTime() || 0) - (a.lastViewed?.getTime() || 0))
+    .sort((a, b) => {
+      const aTime = a.lastViewed?.getTime() || 0;
+      const bTime = b.lastViewed?.getTime() || 0;
+      return bTime - aTime;
+    })
     .slice(0, 5);
 
   const addFlashCard = (card: Omit<FlashCard, 'id' | 'createdAt'>) => {

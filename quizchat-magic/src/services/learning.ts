@@ -56,7 +56,7 @@ function isAxiosError(error: unknown): error is { response?: { data?: { error?: 
 }
 
 class LearningService {
-  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
+  private baseURL = 'http://127.0.0.1:8000/api';
 
   private async makeRequest<T>(endpoint: string, data: any): Promise<T> {
     try {
@@ -90,7 +90,7 @@ class LearningService {
   }
 
   async generateNotes(input: PDFInput): Promise<Notes> {
-    return this.makeRequest<Notes>('/learning/generate-notes/', input);
+    return this.makeRequest<Notes>('/learning/', { ...input, mode: 'generate-notes' });
   }
 
   async generateQuiz(input: PDFInput): Promise<Quiz> {
@@ -100,31 +100,34 @@ class LearningService {
     if (input.quiz_type === 'true_false') {
       const transformedInput = {
         ...input,
+        mode: 'generate-quiz',
         content: {
           ...input.content,
           quiz_type: 'true_false',
           format: 'statement'  // Indicate we want statements for true/false evaluation
         }
       };
-      return this.makeRequest<Quiz>('/learning/generate-quiz/', transformedInput);
+      return this.makeRequest<Quiz>('/learning/', transformedInput);
     }
     
     // Ensure language is included in the request
     const requestData = {
       ...input,
+      mode: 'generate-quiz',
       language: input.language || 'English'  // Ensure language is always set
     };
     
     console.log('Sending quiz request with data:', requestData); // Debug log
-    return this.makeRequest<Quiz>('/learning/generate-quiz/', requestData);
+    return this.makeRequest<Quiz>('/learning/', requestData);
   }
 
   async generateFlashcards(input: PDFInput): Promise<Flashcard> {
     const transformedInput = {
       pdf_id: input.pdf_id,
-      num_items: input.num_items || 5
+      num_items: input.num_items || 5,
+      mode: 'generate-flashcards'
     };
-    return this.makeRequest<Flashcard>('/learning/generate-flashcards/', transformedInput);
+    return this.makeRequest<Flashcard>('/learning/', transformedInput);
   }
 
   async getRecentQuizzes(): Promise<Quiz[]> {
@@ -134,14 +137,24 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/quizzes/recent/`, {
+      const response = await axios.get(`${this.baseURL}/learning/recent-quizzes/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      return response.data as Quiz[];
+      // Transform the response data to match the Quiz interface
+      return response.data.map((quiz: any) => ({
+        id: quiz.id,
+        title: quiz.title,
+        description: quiz.description,
+        quiz_type: quiz.quiz_type,
+        difficulty: quiz.difficulty,
+        language: quiz.language,
+        created_at: quiz.created_at,
+        questions: quiz.questions
+      }));
     } catch (error) {
       console.error('Error fetching recent quizzes:', error);
       throw error;
@@ -155,7 +168,7 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/flashcards/recent/`, {
+      const response = await axios.get(`${this.baseURL}/learning/recent-flashcards/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -165,6 +178,27 @@ class LearningService {
       return response.data as Flashcard[];
     } catch (error) {
       console.error('Error fetching recent flashcards:', error);
+      throw error;
+    }
+  }
+
+  async getFlashcardDetail(id: string): Promise<Flashcard> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/learning/flashcards/${id}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return response.data as Flashcard;
+    } catch (error) {
+      console.error('Error fetching flashcard detail:', error);
       throw error;
     }
   }
@@ -253,6 +287,67 @@ class LearningService {
 
   async saveNote(note: { title: string; content: string; source_text: string }): Promise<any> {
     return this.makeRequest('/notes/', note);
+  }
+
+  async getLearningActivity(): Promise<{ date: string; pdfs: number; flashcards: number; quizzes: number }[]> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      const response = await axios.get(`${this.baseURL}/learning/activity/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching learning activity:', error);
+      throw error;
+    }
+  }
+
+  async getTotalCounts(): Promise<{ total_quizzes: number; total_flashcards: number }> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/learning/total-counts/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching total counts:', error);
+      throw error;
+    }
+  }
+
+  async getQuiz(id: string): Promise<Quiz> {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.get(`${this.baseURL}/learning/quizzes/${id}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      throw error;
+    }
   }
 }
 

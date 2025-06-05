@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,7 +13,12 @@ from .serializers import (
     PDFInputSerializer,
     QuizResponseSerializer, 
     FlashcardResponseSerializer,
-    NotesResponseSerializer
+    NotesResponseSerializer,
+    QuizSerializer,
+    QuizQuestionSerializer,
+    FlashcardSerializer,
+    ConciseNoteSerializer,
+    PDFSerializer
 )
 from .models.chat_models import PDFDocument, ChatMessage
 from langchain_openai import ChatOpenAI
@@ -24,7 +29,6 @@ from langchain.schema.runnable import RunnableBranch, RunnablePassthrough
 from dotenv import load_dotenv
 import asyncio
 import logging
-from .chains.youtube import generate
 import re
 from rest_framework.permissions import IsAuthenticated
 from docx import Document
@@ -33,7 +37,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 from datetime import datetime
 from rest_framework.decorators import api_view, permission_classes
-from .models import YouTubeContent
+from .models import Quiz, QuizQuestion, Flashcard, ConciseNote, PDF
 
 load_dotenv()
 
@@ -64,6 +68,8 @@ class Flashcard(BaseModel):
     flashcards: list[FlashcardItem] = Field(description="List of flashcards with questions and answers")
 
 class PDFUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
         request_body=PDFUploadSerializer,
         responses={
@@ -302,159 +308,265 @@ class ChatView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-def extract_video_id(url_or_id: str) -> str:
-    """Extract video ID from YouTube URL or return the ID if it's already just an ID."""
-    # If it's already just an ID (no URL), return it
-    if not ('youtube.com' in url_or_id or 'youtu.be' in url_or_id):
-        return url_or_id
-        
-    # Regular expressions for different YouTube URL formats
-    patterns = [
-        r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?]+)',
-        r'youtube\.com\/embed\/([^&\n?]+)',
-        r'youtube\.com\/v\/([^&\n?]+)'
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, url_or_id)
-        if match:
-            return match.group(1)
-    return None
+# Quiz views
+class QuizListView(APIView):
+    permission_classes = [IsAuthenticated]
 
-class YouTubeQuizView(APIView):
+    def get(self, request):
+        quizzes = Quiz.objects.filter(user=request.user)
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data)
+
+class QuizDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
+        serializer = QuizSerializer(quiz)
+        return Response(serializer.data)
+
+class QuizCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = QuizSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class QuizUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
+        serializer = QuizSerializer(quiz, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class QuizDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
+        quiz.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Quiz Question views
+class QuizQuestionCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, quiz_id):
+        quiz = get_object_or_404(Quiz, pk=quiz_id, user=request.user)
+        serializer = QuizQuestionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(quiz=quiz)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class QuizQuestionUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        question = get_object_or_404(QuizQuestion, pk=pk, quiz__user=request.user)
+        serializer = QuizQuestionSerializer(question, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class QuizQuestionDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        question = get_object_or_404(QuizQuestion, pk=pk, quiz__user=request.user)
+        question.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Flashcard views
+class FlashcardListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        flashcards = Flashcard.objects.filter(user=request.user)
+        serializer = FlashcardSerializer(flashcards, many=True)
+        return Response(serializer.data)
+
+class FlashcardCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = FlashcardSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FlashcardUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        flashcard = get_object_or_404(Flashcard, pk=pk, user=request.user)
+        serializer = FlashcardSerializer(flashcard, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FlashcardDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        flashcard = get_object_or_404(Flashcard, pk=pk, user=request.user)
+        flashcard.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Concise Note views
+class ConciseNoteListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notes = ConciseNote.objects.filter(user=request.user)
+        serializer = ConciseNoteSerializer(notes, many=True)
+        return Response(serializer.data)
+
+class ConciseNoteCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ConciseNoteSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ConciseNoteUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        note = get_object_or_404(ConciseNote, pk=pk, user=request.user)
+        serializer = ConciseNoteSerializer(note, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ConciseNoteDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        note = get_object_or_404(ConciseNote, pk=pk, user=request.user)
+        note.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# PDF views
+class PDFListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        pdfs = PDF.objects.filter(user=request.user)
+        serializer = PDFSerializer(pdfs, many=True)
+        return Response(serializer.data)
+
+class PDFUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PDFSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PDFDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        pdf = get_object_or_404(PDF, pk=pk, user=request.user)
+        pdf.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class PDFProcessView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         try:
-            video_id = request.data.get('video_id')
-            if not video_id:
-                logger.error("No video_id provided in request")
-                return Response(
-                    {'error': 'video_id is required'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Extract video ID from URL if needed
-            video_id = extract_video_id(video_id)
-            if not video_id:
-                logger.error("Invalid YouTube URL or video ID")
-                return Response(
-                    {'error': 'Invalid YouTube URL or video ID'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            logger.info(f"Processing quiz request for video_id: {video_id}")
-            result = generate(video_id, 'quiz')
-            logger.info("Successfully generated quiz")
-            return Response(result)
-            
+            pdf_id = request.data.get('pdf_id')
+            pdf = get_object_or_404(PDF, pk=pdf_id, user=request.user)
+            # Process PDF logic here
+            return Response({'status': 'success'})
         except Exception as e:
-            logger.error(f"Error in YouTubeQuizView: {str(e)}", exc_info=True)
+            logger.error(f"Error in PDFProcessView: {str(e)}", exc_info=True)
             return Response(
-                {'error': str(e)}, 
+                {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class YouTubeFlashcardsView(APIView):
+class PDFChatMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-1.5-pro",
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+    )
+
     def post(self, request):
         try:
-            video_id = request.data.get('video_id')
-            if not video_id:
-                logger.error("No video_id provided in request")
+            pdf_id = request.data.get('pdf_id')
+            message = request.data.get('message')
+            
+            if not pdf_id or not message:
                 return Response(
-                    {'error': 'video_id is required'}, 
+                    {'error': 'Both pdf_id and message are required'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+            pdf = get_object_or_404(PDF, pk=pdf_id, user=request.user)
             
-            # Extract video ID from URL if needed
-            video_id = extract_video_id(video_id)
-            if not video_id:
-                logger.error("Invalid YouTube URL or video ID")
+            # Get the PDF content
+            file_path = os.path.join(UPLOAD_DIR, f"{pdf_id}.pdf")
+            if not os.path.exists(file_path):
                 return Response(
-                    {'error': 'Invalid YouTube URL or video ID'}, 
-                    status=status.HTTP_400_BAD_REQUEST
+                    {'error': 'PDF file not found'},
+                    status=status.HTTP_404_NOT_FOUND
                 )
+
+            # Load and process the PDF
+            loader = PyPDFLoader(file_path)
+            pages = loader.load()
+            text = "\n".join(page.page_content for page in pages)
+
+            # Create a prompt for the chat
+            prompt = f"""You are a helpful assistant that answers questions about the following text. 
+            Please provide a clear and concise answer based only on the information in the text.
             
-            logger.info(f"Processing flashcards request for video_id: {video_id}")
-            result = generate(video_id, 'flashcards')
-            logger.info("Successfully generated flashcards")
-            return Response(result)
+            Text:
+            {text}
             
+            Question: {message}
+            
+            Answer:"""
+
+            # Get response from the LLM
+            response = self.llm.invoke(prompt)
+            
+            return Response({
+                'response': response.content
+            })
+
         except Exception as e:
-            logger.error(f"Error in YouTubeFlashcardsView: {str(e)}", exc_info=True)
+            logger.error(f"Error in PDFChatMessageView: {str(e)}", exc_info=True)
             return Response(
-                {'error': str(e)}, 
+                {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class YouTubeNotesView(APIView):
-    def post(self, request):
-        try:
-            video_id = request.data.get('video_id')
-            if not video_id:
-                logger.error("No video_id provided in request")
-                return Response(
-                    {'error': 'video_id is required'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Extract video ID from URL if needed
-            video_id = extract_video_id(video_id)
-            if not video_id:
-                logger.error("Invalid YouTube URL or video ID")
-                return Response(
-                    {'error': 'Invalid YouTube URL or video ID'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            logger.info(f"Processing notes request for video_id: {video_id}")
-            result = generate(video_id, 'notes')
-            logger.info("Successfully generated notes")
-            return Response(result)
-            
-        except Exception as e:
-            logger.error(f"Error in YouTubeNotesView: {str(e)}", exc_info=True)
-            return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-class YouTubeChatView(APIView):
-    def post(self, request):
-        try:
-            video_id = request.data.get('video_id')
-            if not video_id:
-                logger.error("No video_id provided in request")
-                return Response(
-                    {'error': 'video_id is required'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Extract video ID from URL if needed
-            video_id = extract_video_id(video_id)
-            if not video_id:
-                logger.error("Invalid YouTube URL or video ID")
-                return Response(
-                    {'error': 'Invalid YouTube URL or video ID'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            logger.info(f"Processing chat request for video_id: {video_id}")
-            result = generate(video_id, 'chat')
-            logger.info("Successfully generated chat content")
-            return Response(result)
-            
-        except Exception as e:
-            logger.error(f"Error in YouTubeChatView: {str(e)}", exc_info=True)
-            return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def youtube_history(request):
-    try:
-        # Get all YouTube content for the current user
-        content = YouTubeContent.objects.filter(user=request.user)
-        return Response([item.to_dict() for item in content])
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
+def pdf_history(request):
+    # Get all PDF content for the current user
+    content = PDF.objects.filter(user=request.user)
+    serializer = PDFSerializer(content, many=True)
+    return Response(serializer.data)

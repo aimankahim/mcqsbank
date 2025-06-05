@@ -48,7 +48,9 @@ const QuizView: React.FC = () => {
         const quizData = location.state?.quizData;
         if (quizData) {
           console.log('Quiz data from state:', quizData);
-          if (!quizData.content?.questions) {
+          // Support both quizData.content.questions and quizData.questions
+          const questions = quizData.content?.questions || quizData.questions;
+          if (!questions) {
             // If it's a YouTube quiz, fetch the quiz data from the API
             if (quizData.video_url) {
               try {
@@ -71,17 +73,16 @@ const QuizView: React.FC = () => {
             }
             throw new Error('Invalid quiz data: missing questions');
           }
-          
           setQuiz({
             id: quizData.id,
             title: quizData.title,
-            questions: quizData.content.questions,
+            questions,
             video_url: quizData.video_url,
-            quiz_type: quizData.content.quiz_type || 'multiple_choice',
-            difficulty: quizData.content.difficulty || 'medium',
-            language: quizData.content.language || 'English'
+            quiz_type: quizData.content?.quiz_type || quizData.quiz_type || 'multiple_choice',
+            difficulty: quizData.content?.difficulty || quizData.difficulty || 'medium',
+            language: quizData.content?.language || quizData.language || 'English'
           });
-          setAnswers(new Array(quizData.content.questions.length).fill(''));
+          setAnswers(new Array(questions.length).fill(''));
         } else {
           // If no quiz data in state, try to get from localStorage
           const storedContent = localStorage.getItem('generatedContent');
@@ -110,20 +111,22 @@ const QuizView: React.FC = () => {
               }
             }
             
-            if (!quizData.content?.questions) {
+            // Support both quizData.content.questions and quizData.questions
+            const questions = quizData.content?.questions || quizData.questions;
+            if (!questions) {
               throw new Error('Invalid quiz data: missing questions');
             }
             
             setQuiz({
               id: quizData.id,
               title: quizData.title,
-              questions: quizData.content.questions,
+              questions,
               video_url: quizData.video_url,
-              quiz_type: quizData.content.quiz_type || 'multiple_choice',
-              difficulty: quizData.content.difficulty || 'medium',
-              language: quizData.content.language || 'English'
+              quiz_type: quizData.content?.quiz_type || quizData.quiz_type || 'multiple_choice',
+              difficulty: quizData.content?.difficulty || quizData.difficulty || 'medium',
+              language: quizData.content?.language || quizData.language || 'English'
             });
-            setAnswers(new Array(quizData.content.questions.length).fill(''));
+            setAnswers(new Array(questions.length).fill(''));
           } else {
             throw new Error('No quiz data available');
           }

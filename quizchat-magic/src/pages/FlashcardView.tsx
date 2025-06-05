@@ -4,8 +4,8 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, Repeat, Brain } from 'lucide-react';
-import { quizService } from '@/services/quizService';
+import { ArrowLeft, Repeat, Brain } from 'lucide-react';
+import { learningService } from '@/services/learning';
 
 interface Flashcard {
   id: number;
@@ -27,7 +27,7 @@ const FlashcardView: React.FC = () => {
     const fetchFlashcard = async () => {
       try {
         if (!id) return;
-        const response = await quizService.getFlashcard(id);
+        const response = await learningService.getFlashcardDetail(id);
         setFlashcard(response);
       } catch (error) {
         console.error('Error fetching flashcard:', error);

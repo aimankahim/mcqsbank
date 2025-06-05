@@ -23,7 +23,9 @@ import {
   TrendingUp,
   Activity,
   Youtube,
-  PlayCircle
+  PlayCircle,
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { learningService } from '@/services/learning';
 import { format, subDays } from 'date-fns';
@@ -77,66 +79,131 @@ interface YouTubeContent {
   thumbnail_url?: string;
 }
 
+interface Quiz {
+  id: number;
+  title: string;
+  description: string;
+  created_at: string;
+}
+
+interface Flashcard {
+  id: number;
+  front: string;
+  back: string;
+  created_at: string;
+}
+
+interface Note {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+}
+
+interface PDF {
+  id: number;
+  title: string;
+  file: string;
+  created_at: string;
+  processed: boolean;
+}
+
 const COLORS = ['#8B5CF6', '#EC4899', '#3B82F6'];
 
 const Dashboard: React.FC = () => {
   const { pdfs, loading } = usePDF();
-  const { flashcards, getFlashcardsByPDF, recentFlashcards, updateFlashcardLastViewed } = useLearning();
+  const { flashcards, getFlashcardsByPDF, recentFlashcards: contextRecentFlashcards, updateFlashcardLastViewed } = useLearning();
   const navigate = useNavigate();
   const [recentQuizzes, setRecentQuizzes] = useState<RecentItem[]>([]);
   const [recentNotes, setRecentNotes] = useState<RecentNote[]>([]);
+  const [recentFlashcards, setRecentFlashcards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
   const [youtubeContent, setYoutubeContent] = useState<YouTubeContent[]>([]);
   const [isLoadingYoutube, setIsLoadingYoutube] = useState(true);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [totalQuizzes, setTotalQuizzes] = useState(0);
+  const [totalFlashcards, setTotalFlashcards] = useState(0);
 
-  const totalFlashcards = Array.isArray(pdfs) ? pdfs.reduce((total, pdf) => {
+  const computedTotalFlashcards = Array.isArray(pdfs) ? pdfs.reduce((total, pdf) => {
     return total + getFlashcardsByPDF(pdf.id).length;
   }, 0) : 0;
 
   const recentPdfs = Array.isArray(pdfs) ? pdfs.slice(0, 3) : [];
 
-  // Generate mock activity data for the last 7 days
+  // Fetch real activity data for the last 7 days
   useEffect(() => {
-    const generateActivityData = () => {
-      const data: ActivityData[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        data.push({
-          date: format(date, 'MMM dd'),
-          pdfs: Math.floor(Math.random() * 5),
-          flashcards: Math.floor(Math.random() * 10),
-          quizzes: Math.floor(Math.random() * 8)
-        });
+    const fetchActivityData = async () => {
+      try {
+        const data = await learningService.getLearningActivity();
+        setActivityData(data);
+      } catch (error) {
+        console.error('Error fetching activity data:', error);
       }
-      setActivityData(data);
     };
-
-    generateActivityData();
+    fetchActivityData();
   }, []);
 
   // Calculate distribution data for pie chart
   const distributionData = [
     { name: 'PDFs', value: pdfs.length },
     { name: 'Flashcards', value: totalFlashcards },
-    { name: 'Quizzes', value: recentQuizzes.length }
+    { name: 'Quizzes', value: totalQuizzes }
   ];
 
   useEffect(() => {
     const fetchRecentItems = async () => {
       try {
         setIsLoading(true);
-        const [quizzes, notes] = await Promise.all([
+        console.log('Fetching recent items...');
+        
+        const [quizzesRes, notesRes, totalCountsRes, flashcardsRes] = await Promise.all([
           learningService.getRecentQuizzes(),
-          learningService.getRecentNotes(),
+          api.get('/api/notes/recent/'),
+          learningService.getTotalCounts(),
+          learningService.getRecentFlashcards()
         ]);
 
-        setRecentQuizzes(Array.isArray(quizzes) ? quizzes : []);
-        setRecentNotes(Array.isArray(notes) ? notes : []);
+        console.log('Quizzes response:', quizzesRes);
+        console.log('Total counts response:', totalCountsRes);
+        console.log('Flashcards response:', flashcardsRes);
+
+        // Transform quiz data to match the expected format
+        const transformedQuizzes = quizzesRes.map((quiz: any) => ({
+          id: quiz.id,
+          title: quiz.title || 'Untitled Quiz',
+          description: quiz.description || '',
+          created_at: quiz.created_at,
+          quiz_type: quiz.quiz_type || 'multiple_choice',
+          difficulty: quiz.difficulty || 'medium',
+          language: quiz.language || 'English'
+        }));
+
+        // Transform flashcard data to match the expected format
+        const transformedFlashcards = flashcardsRes.map((fc: any) => ({
+          id: fc.id,
+          front: fc.front_content,
+          back: fc.back_content,
+          created_at: fc.created_at,
+        }));
+
+        setRecentQuizzes(transformedQuizzes);
+        setNotes(notesRes.data);
+        setTotalQuizzes(totalCountsRes.total_quizzes);
+        setTotalFlashcards(totalCountsRes.total_flashcards);
+        setRecentFlashcards(transformedFlashcards);
       } catch (error) {
         console.error('Error fetching recent items:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+          console.error('Error status:', error.response.status);
+        }
         setRecentQuizzes([]);
-        setRecentNotes([]);
+        setNotes([]);
+        setTotalQuizzes(0);
+        setTotalFlashcards(0);
+        setRecentFlashcards([]);
       } finally {
         setIsLoading(false);
       }
@@ -184,6 +251,20 @@ const Dashboard: React.FC = () => {
     navigate(`/flashcards?flashcard=${flashcardId}`);
   };
 
+  const handleQuizClick = async (quizId: string) => {
+    try {
+      const quizData = await learningService.getQuiz(quizId);
+      navigate(`/quizzes/${quizId}`, { state: { quizData } });
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load quiz',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getContentTypeIcon = (type: string) => {
     switch (type) {
       case 'quiz':
@@ -209,6 +290,14 @@ const Dashboard: React.FC = () => {
         return 'from-gray-500 to-gray-600';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <MainLayout>
@@ -279,7 +368,7 @@ const Dashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-                    {recentQuizzes.length}
+                    {totalQuizzes}
                   </p>
                 </CardContent>
               </Card>
@@ -388,113 +477,6 @@ const Dashboard: React.FC = () => {
               </Card>
             </div>
 
-            {/* YouTube Content History Section */}
-            <div className="mb-8">
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-                        <Youtube className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-bold text-gray-900">YouTube Learning History</CardTitle>
-                        <CardDescription>Your recently created content from YouTube videos</CardDescription>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate('/youtube')}
-                      className="h-8 hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-            </CardHeader>
-            <CardContent>
-                  {isLoadingYoutube ? (
-                    <div className="flex justify-center items-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-                    </div>
-                  ) : youtubeContent.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {youtubeContent.map((content) => (
-                        <div
-                          key={content.id}
-                          className="group relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden cursor-pointer"
-                          onClick={() => {
-                            if (content.content_type === 'quiz') {
-                              navigate(`/quizzes/${content.id}`, { 
-                                state: { 
-                                  quizData: {
-                                    id: content.id,
-                                    title: content.title,
-                                    content: content.content_data,
-                                    video_url: content.video_url
-                                  }
-                                }
-                              });
-                            } else {
-                              navigate(`/${content.content_type}/${content.id}`);
-                            }
-                          }}
-                        >
-                          {/* Thumbnail */}
-                          <div className="relative h-40 overflow-hidden">
-                            {content.thumbnail_url ? (
-                              <img
-                                src={content.thumbnail_url}
-                                alt={content.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center bg-gray-100">
-                                <Youtube className="h-12 w-12 text-gray-400" />
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            <div className="absolute bottom-2 left-2">
-                              <div className={`inline-flex items-center px-2 py-1 rounded-full bg-gradient-to-r ${getContentTypeColor(content.content_type)} text-white text-xs font-medium`}>
-                                {getContentTypeIcon(content.content_type)}
-                                <span className="ml-1 capitalize">{content.content_type}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Content Info */}
-                          <div className="p-4">
-                            <h3 className="font-semibold text-gray-900 group-hover:text-brand-600 transition-colors duration-200 line-clamp-2">
-                              {content.title}
-                            </h3>
-                            <div className="flex items-center mt-2 text-sm text-gray-500">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {format(new Date(content.created_at), 'MMM d, yyyy')}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500/20 to-red-600/20 flex items-center justify-center mx-auto mb-4">
-                        <Youtube className="h-8 w-8 text-red-600" />
-                      </div>
-                      <p className="text-gray-600 mb-4">No YouTube content created yet</p>
-                      <Button
-                        size="lg"
-                        onClick={() => navigate('/youtube')}
-                        className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                      >
-                        <Youtube className="h-5 w-5 mr-2" />
-                        Create from YouTube
-                      </Button>
-                    </div>
-                  )}
-            </CardContent>
-          </Card>
-        </div>
-
             {/* Recent Items Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Recent PDFs */}
@@ -590,27 +572,27 @@ const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               {recentFlashcards.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                   {recentFlashcards.map((flashcard) => (
                     <div
                       key={flashcard.id}
-                          className="flex items-center justify-between p-3 hover:bg-white/50 rounded-lg cursor-pointer transition-all duration-200 group"
-                      onClick={() => handleFlashcardClick(flashcard.id)}
+                      className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
+                      onClick={() => navigate(`/flashcards/${flashcard.id}`)}
                     >
-                          <div className="flex items-center space-x-3">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                              <Brain className="h-4 w-4 text-brand-600" />
-                            </div>
-                            <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200 truncate max-w-[200px]">
-                              {flashcard.front}
-                            </span>
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <Brain className="h-4 w-4 text-brand-600" />
+                        </div>
+                        <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200 truncate max-w-[200px]">
+                          {flashcard.front_content}
+                        </span>
                       </div>
-                          <div className="flex items-center space-x-2">
-                            <Clock className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-500">
-                        {flashcard.lastViewed && format(new Date(flashcard.lastViewed), 'MMM d, yyyy')}
-                      </span>
-                          </div>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">
+                          {format(new Date(flashcard.created_at), 'MMM d, yyyy')}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -666,23 +648,23 @@ const Dashboard: React.FC = () => {
                   {recentQuizzes.map((quiz) => (
                     <div
                       key={quiz.id}
-                          className="flex items-center justify-between p-3 hover:bg-white/50 rounded-lg cursor-pointer transition-all duration-200 group"
-                      onClick={() => navigate(`/quizzes/${quiz.id}`)}
+                      className="flex items-center justify-between p-3 hover:bg-white/50 rounded-lg cursor-pointer transition-all duration-200 group"
+                      onClick={() => handleQuizClick(quiz.id)}
                     >
-                          <div className="flex items-center space-x-3">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                              <ScrollText className="h-4 w-4 text-brand-600" />
-                            </div>
-                            <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200">
-                              {quiz.title}
-                            </span>
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                          <ScrollText className="h-4 w-4 text-brand-600" />
+                        </div>
+                        <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200">
+                          {quiz.title}
+                        </span>
                       </div>
-                          <div className="flex items-center space-x-2">
-                            <Clock className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-500">
-                        {format(new Date(quiz.created_at), 'MMM d, yyyy')}
-                      </span>
-                          </div>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">
+                          {format(new Date(quiz.created_at), 'MMM d, yyyy')}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -728,69 +710,70 @@ const Dashboard: React.FC = () => {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {youtubeContent.map((content) => (
-                      <div
-                        key={content.id}
-                        className="group relative overflow-hidden rounded-lg border bg-white/50 backdrop-blur-sm p-4 hover:shadow-lg transition-all duration-200"
-                      >
-                        <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
-                          {content.thumbnail_url ? (
-                            <img
-                              src={content.thumbnail_url}
-                              alt={content.title}
-                              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center bg-gray-100">
-                              <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
+                  {youtubeContent && Array.isArray(youtubeContent) && youtubeContent.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {youtubeContent.map((content) => (
+                        <div
+                          key={content.id}
+                          className="group relative overflow-hidden rounded-lg border bg-white/50 backdrop-blur-sm p-4 hover:shadow-lg transition-all duration-200"
+                        >
+                          <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
+                            {content.thumbnail_url ? (
+                              <img
+                                src={content.thumbnail_url}
+                                alt={content.title}
+                                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center bg-gray-100">
+                                <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-500">
+                                {new Date(content.created_at).toLocaleDateString()}
+                              </span>
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                content.content_type === 'quiz'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : content.content_type === 'flashcards'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {content.content_type.charAt(0).toUpperCase() + content.content_type.slice(1)}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                        <div className="mt-4 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-500">
-                              {new Date(content.created_at).toLocaleDateString()}
-                            </span>
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              content.content_type === 'quiz'
-                                ? 'bg-blue-100 text-blue-800'
-                                : content.content_type === 'flashcards'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {content.content_type.charAt(0).toUpperCase() + content.content_type.slice(1)}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-gray-900 line-clamp-2">{content.title}</h3>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs"
-                              onClick={() => {
-                                const path = content.content_type === 'quiz' ? '/quizzes' : `/${content.content_type}`;
-                                navigate(path);
-                              }}
-                            >
-                              View {content.content_type}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs"
-                              onClick={() => window.open(content.video_url, '_blank')}
-                            >
-                              Watch Video
-                            </Button>
+                            <h3 className="font-semibold text-gray-900 line-clamp-2">{content.title}</h3>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => {
+                                  const path = content.content_type === 'quiz' ? '/quizzes' : `/${content.content_type}`;
+                                  navigate(path);
+                                }}
+                              >
+                                View {content.content_type}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => window.open(content.video_url, '_blank')}
+                              >
+                                Watch Video
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  {youtubeContent.length === 0 && (
+                      ))}
+                    </div>
+                  ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                       <div className="rounded-full bg-gray-100 p-3">
                         <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

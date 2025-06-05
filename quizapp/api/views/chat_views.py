@@ -54,7 +54,7 @@ class PDFListView(views.APIView):
 
     def get(self, request):
         try:
-            pdfs = PDFDocument.objects.filter(processed=True).order_by('-uploaded_at')
+            pdfs = PDFDocument.objects.filter(user=request.user, processed=True).order_by('-uploaded_at')
             data = [{
                 'id': str(pdf.id),
                 'title': pdf.title,
@@ -73,7 +73,7 @@ class PDFDetailView(views.APIView):
 
     def get(self, request, pdf_id):
         try:
-            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user, processed=True)
             data = {
                 'id': str(pdf.id),
                 'title': pdf.title,
@@ -97,7 +97,7 @@ class PDFDownloadView(views.APIView):
 
     def get(self, request, pdf_id):
         try:
-            pdf = PDFDocument.objects.get(id=pdf_id, processed=True)
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user, processed=True)
             file_path = pdf.get_file_path()
             
             if not file_path or not os.path.exists(file_path):
@@ -133,7 +133,7 @@ class PDFDeleteView(views.APIView):
 
     def delete(self, request, pdf_id):
         try:
-            pdf = PDFDocument.objects.get(id=pdf_id)
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user)
             pdf.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except PDFDocument.DoesNotExist:
@@ -198,67 +198,21 @@ class PDFUploadView(views.APIView):
             pdf_doc = PDFDocument.objects.create(
                 title=pdf_file.name,
                 file=pdf_file,  # Pass the file object directly
-                processed=False,
-                user=request.user
+                user=request.user  # Associate with current user
             )
             
-            try:
-                # Load and split the PDF with optimized parameters
-                logger.info("Loading PDF with PyPDFLoader")
-                loader = PyPDFLoader(pdf_doc.file.path)  # Use the file path from the model
-                documents = loader.load()
-                
-                logger.info("Splitting PDF content")
-                text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=500,
-                    chunk_overlap=50
-                )
-                splits = text_splitter.split_documents(documents)
-
-                # Create embeddings and store them
-                logger.info("Creating embeddings")
-                embeddings = get_embeddings()
-                vectorstore = FAISS.from_documents(splits, embeddings)
-                
-                # Save the vector store
-                store_path = f'vectorstores/{pdf_doc.id}'
-                vector_store_dir = os.path.join(settings.MEDIA_ROOT, 'vectorstores')
-                os.makedirs(vector_store_dir, exist_ok=True)
-                
-                full_store_path = os.path.join(settings.MEDIA_ROOT, store_path)
-                logger.info(f"Saving vector store to: {full_store_path}")
-                
-                vectorstore.save_local(full_store_path)
-                
-                # Cache the vector store in memory
-                VECTOR_STORE_CACHE[str(pdf_doc.id)] = vectorstore
-                
-                # Update the PDF document
-                pdf_doc.embedding_store = full_store_path
-                pdf_doc.processed = True
-                pdf_doc.save()
-                
-                logger.info("PDF processing completed successfully")
-                return Response({
-                    'message': 'PDF processed successfully',
-                    'pdf_id': str(pdf_doc.id)
-                }, status=status.HTTP_201_CREATED)
-                
-            except Exception as processing_error:
-                logger.error(f"Error processing PDF content: {str(processing_error)}", exc_info=True)
-                # Clean up the PDF document and file if processing fails
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                pdf_doc.delete()
-                return Response({
-                    'error': str(processing_error)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-        except Exception as e:
-            logger.error(f"Error in PDF upload: {str(e)}", exc_info=True)
             return Response({
-                'error': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                'id': str(pdf_doc.id),
+                'title': pdf_doc.title,
+                'message': 'PDF uploaded successfully'
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error uploading PDF: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'Failed to upload PDF'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class ChatView(views.APIView):
     parser_classes = (JSONParser,)
@@ -307,7 +261,7 @@ class ChatView(views.APIView):
             
             # Get the specified PDF document
             try:
-                pdf_doc = PDFDocument.objects.get(id=pdf_uuid, processed=True)
+                pdf_doc = PDFDocument.objects.get(id=pdf_uuid, user=request.user, processed=True)
             except PDFDocument.DoesNotExist:
                 return Response(
                     {'error': 'PDF document not found'}, 
@@ -371,5 +325,66 @@ class ChatView(views.APIView):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
+class PDFChatMessageView(views.APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (JSONParser,)
+
+    def post(self, request):
+        try:
+            pdf_id = request.data.get('pdf_id')
+            message = request.data.get('message')
+            
+            if not pdf_id or not message:
+                return Response(
+                    {'error': 'Both pdf_id and message are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            pdf = PDFDocument.objects.get(id=pdf_id, user=request.user)
+            
+            # Get the PDF content
+            file_path = pdf.get_file_path()
+            if not file_path or not os.path.exists(file_path):
+                return Response(
+                    {'error': 'PDF file not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Load and process the PDF
+            loader = PyPDFLoader(file_path)
+            pages = loader.load()
+            text = "\n".join(page.page_content for page in pages)
+
+            # Create a prompt for the chat
+            prompt = f"""You are a helpful assistant that answers questions about the following text. 
+            Please provide a clear and concise answer based only on the information in the text.
+            
+            Text:
+            {text}
+            
+            Question: {message}
+            
+            Answer:"""
+
+            # Get response from the LLM
+            llm = get_llm()
+            response = llm.invoke(prompt)
+            
+            return Response({
+                'response': response.content
+            })
+
+        except PDFDocument.DoesNotExist:
+            return Response(
+                {'error': 'PDF not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error in PDFChatMessageView: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
 

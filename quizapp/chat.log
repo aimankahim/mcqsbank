@@ -3560,3 +3560,18 @@ TypeError: can only concatenate str (not "NoneType") to str
 2025-06-03 14:36:48,379 - api.chains.youtube - INFO - Environment variables loaded
 2025-06-03 14:36:48,460 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
 2025-06-03 14:36:48,460 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-04 11:39:24,719 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-04 11:39:24,871 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-04 11:39:24,995 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-04 15:18:25,597 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-04 15:18:25,926 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-04 15:18:26,125 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-04 15:19:29,331 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-04 15:19:29,549 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-04 15:19:29,649 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-04 15:19:40,379 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-04 15:19:40,536 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-04 15:19:40,600 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully
+2025-06-04 15:19:56,918 - api.chains.youtube - INFO - YouTube Content Generator application started
+2025-06-04 15:19:57,349 - api.chains.youtube - INFO - Environment variables loaded
+2025-06-04 15:19:57,518 - api.chains.youtube - INFO - YouTube Content Generator initialized successfully

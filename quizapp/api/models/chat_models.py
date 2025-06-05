@@ -18,7 +18,7 @@ class PDFDocument(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
     embedding_store = models.CharField(max_length=255, blank=True, null=True)  # Path to the vector store
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pdf_documents', null=True, blank=True)  # Make it nullable initially
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pdf_documents')  # Make user field required
 
     def __str__(self):
         return self.title

@@ -17,7 +17,7 @@ interface ApiResponse {
 }
 
 class ChatService {
-  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
+  private baseURL = 'http://127.0.0.1:8000/api';
 
   async uploadPDF(file: File): Promise<string> {
     try {
@@ -31,7 +31,7 @@ class ChatService {
 
       console.log('Uploading PDF for chat:', file.name);
 
-      const response = await axios.post<ApiResponse>(`${this.baseURL}/chat/upload-pdf/`, formData, {
+      const response = await axios.post<ApiResponse>(`${this.baseURL}/pdfs/upload/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

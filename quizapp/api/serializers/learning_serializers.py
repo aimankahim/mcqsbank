@@ -13,6 +13,13 @@ class QuizQuestionSerializer(serializers.Serializer):
     correct_answer = serializers.CharField()
 
 class QuizResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    description = serializers.CharField(required=False, allow_blank=True)
+    quiz_type = serializers.CharField()
+    difficulty = serializers.CharField()
+    language = serializers.CharField()
+    created_at = serializers.DateTimeField()
     questions = serializers.ListField(child=QuizQuestionSerializer())
 
 class FlashcardItemSerializer(serializers.Serializer):
@@ -20,7 +27,11 @@ class FlashcardItemSerializer(serializers.Serializer):
     answer = serializers.CharField()
 
 class FlashcardResponseSerializer(serializers.Serializer):
-    flashcards = serializers.ListField(child=FlashcardItemSerializer())
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    front_content = serializers.CharField()
+    back_content = serializers.CharField()
+    created_at = serializers.DateTimeField()
 
 class NotesResponseSerializer(serializers.Serializer):
     notes = serializers.CharField() 

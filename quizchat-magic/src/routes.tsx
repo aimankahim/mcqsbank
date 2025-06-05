@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { createBrowserRouter } from 'react-router-dom';
+import { PrivateRoute } from '@/components/auth/PrivateRoute';
 
 // Pages
 import Login from '@/pages/Login';
@@ -17,21 +19,15 @@ import NoteView from '@/pages/NoteView';
 import Chat from '@/pages/Chat';
 import NotFound from '@/pages/NotFound';
 import ForgotPassword from '@/pages/ForgotPassword';
-import YouTubeVideo from '@/pages/YouTubeVideo';
+import Register from '@/pages/Register';
 
-const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? element : <Navigate to="/login" />;
-};
-
-const AppRoutes: React.FC = () => {
+const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
       <Route path="/upload" element={<PrivateRoute element={<Upload />} />} />
-      <Route path="/youtube" element={<PrivateRoute element={<YouTubeVideo />} />} />
       <Route path="/pdfs" element={<PrivateRoute element={<PDFList />} />} />
       <Route path="/pdfs/:id" element={<PrivateRoute element={<PDFView />} />} />
       <Route path="/flashcards" element={<PrivateRoute element={<Flashcards />} />} />
@@ -41,9 +37,45 @@ const AppRoutes: React.FC = () => {
       <Route path="/notes" element={<PrivateRoute element={<Notes />} />} />
       <Route path="/notes/:id" element={<PrivateRoute element={<NoteView />} />} />
       <Route path="/chat" element={<PrivateRoute element={<Chat />} />} />
+      <Route path="/register" element={<Register />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <PrivateRoute element={<Dashboard />} />,
+  },
+  {
+    path: '/quiz/:id',
+    element: <PrivateRoute element={<QuizView />} />,
+  },
+  {
+    path: '/flashcards',
+    element: <PrivateRoute element={<Flashcards />} />,
+  },
+  {
+    path: '/notes',
+    element: <PrivateRoute element={<Notes />} />,
+  },
+  {
+    path: '/pdf/:id',
+    element: <PrivateRoute element={<PDFView />} />,
+  },
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/register',
+    element: <Register />,
+  },
+  {
+    path: '*',
+    element: <NotFound />,
+  },
+]);
 
 export default AppRoutes; 

@@ -13,7 +13,7 @@ class DifficultyLevel(models.TextChoices):
     MEDIUM = 'medium', 'Medium'
     HARD = 'hard', 'Hard'
 
-class Quiz(models.Model):
+class QuizModel(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     quiz_type = models.CharField(
@@ -38,7 +38,7 @@ class Quiz(models.Model):
         return self.title
 
 class QuizQuestion(models.Model):
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    quiz = models.ForeignKey(QuizModel, on_delete=models.CASCADE, related_name='questions')
     question = models.TextField()
     correct_answer = models.TextField()
     options = models.JSONField()  # Store options as a JSON array

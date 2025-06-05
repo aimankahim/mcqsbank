@@ -20,9 +20,11 @@ from dotenv import load_dotenv
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import google.generativeai as genai
-from api.models.quiz_models import Quiz as QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
+from api.models.quiz_models import QuizModel, QuizQuestion as QuizQuestionModel, Flashcard as FlashcardModel, ConciseNote
 from api.models.chat_models import PDFDocument
 from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
+from datetime import timedelta
 
 load_dotenv()
 
@@ -83,7 +85,7 @@ class LearningAPIView(APIView):
     def extract_text_from_pdf(self, pdf_id):
         try:
             # Get the PDF document from the database, ensuring it belongs to the current user
-            pdf = PDFDocument.objects.get(id=pdf_id, user=self.request.user, processed=True)
+            pdf = PDFDocument.objects.get(id=pdf_id, user=self.request.user)
             if not pdf.file:
                 raise FileNotFoundError("PDF file not found in database")
             
@@ -264,24 +266,39 @@ Text to create flashcards from:
 
     def save_quiz(self, quiz_data, user):
         try:
-            # Create the quiz
+            print(f"Quiz data type: {type(quiz_data)}")
+            print(f"Quiz data: {quiz_data}")
+            
+            # Create the quiz with all required fields
             quiz = QuizModel.objects.create(
                 title=f"Quiz generated from PDF",
                 description="Automatically generated quiz",
-                user=user
+                user=user,
+                quiz_type="multiple_choice",
+                difficulty="medium",
+                language="English"
             )
             
-            # Create questions
+            # Create questions using the Pydantic model's questions attribute
             for q_data in quiz_data.questions:
-                QuizQuestionModel.objects.create(
+                print(f"Creating question: {q_data}")
+                question = QuizQuestionModel.objects.create(
                     quiz=quiz,
                     question=q_data.question,
                     correct_answer=q_data.correct_answer,
                     options=q_data.options
                 )
+                print(f"Created question with ID: {question.id}")
+            
             return quiz
         except Exception as e:
             print(f"Error saving quiz: {str(e)}")
+            print(f"Error type: {type(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            # If quiz was created but questions failed, delete the quiz
+            if 'quiz' in locals():
+                quiz.delete()
             raise
 
     def save_flashcards(self, flashcard_data, user):
@@ -374,8 +391,8 @@ Example format to maintain:
     )
     def post(self, request, *args, **kwargs):
         try:
-            # Get the mode from the URL
-            mode = request.path.strip('/').split('/')[-1]
+            # Get the mode from request data
+            mode = request.data.get('mode')
             print(f"Processing request for mode: {mode}")
             print(f"Request data: {request.data}")
             
@@ -473,4 +490,182 @@ Example format to maintain:
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            ) 
+            )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_learning_activity(request):
+    user = request.user
+    today = timezone.now().date()
+    data = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        pdfs_count = PDFDocument.objects.filter(user=user, uploaded_at__date=day).count()
+        flashcards_count = FlashcardModel.objects.filter(user=user, created_at__date=day).count()
+        quizzes_count = QuizModel.objects.filter(user=user, created_at__date=day).count()
+        data.append({
+            'date': day.strftime('%b %d'),
+            'pdfs': pdfs_count,
+            'flashcards': flashcards_count,
+            'quizzes': quizzes_count
+        })
+    return Response(data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_recent_quizzes(request):
+    try:
+        # Get the 5 most recent quizzes for the user
+        recent_quizzes = QuizModel.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:5]
+        
+        # Prepare the response data
+        quiz_data = []
+        for quiz in recent_quizzes:
+            # Get the questions for this quiz
+            questions = QuizQuestionModel.objects.filter(quiz=quiz)
+            question_data = []
+            for question in questions:
+                question_data.append({
+                    'id': question.id,
+                    'question': question.question,
+                    'options': question.options,
+                    'correct_answer': question.correct_answer
+                })
+            
+            quiz_data.append({
+                'id': quiz.id,
+                'title': quiz.title,
+                'description': quiz.description,
+                'quiz_type': quiz.quiz_type,
+                'difficulty': quiz.difficulty,
+                'language': quiz.language,
+                'created_at': quiz.created_at,
+                'content': {
+                    'questions': question_data,
+                    'quiz_type': quiz.quiz_type,
+                    'difficulty': quiz.difficulty,
+                    'language': quiz.language
+                }
+            })
+        
+        return Response(quiz_data)
+    except Exception as e:
+        print(f"Error in get_recent_quizzes: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_recent_flashcards(request):
+    try:
+        # Get the 5 most recent flashcards for the user
+        recent_flashcards = FlashcardModel.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:5]
+        
+        serializer = FlashcardResponseSerializer(recent_flashcards, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_total_counts(request):
+    try:
+        total_quizzes = QuizModel.objects.filter(user=request.user).count()
+        total_flashcards = FlashcardModel.objects.filter(user=request.user).count()
+        
+        return Response({
+            'total_quizzes': total_quizzes,
+            'total_flashcards': total_flashcards
+        })
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_quiz_detail(request, quiz_id):
+    try:
+        # Get the quiz and ensure it belongs to the current user
+        quiz = QuizModel.objects.get(id=quiz_id, user=request.user)
+        
+        # Get the questions for this quiz
+        questions = QuizQuestionModel.objects.filter(quiz=quiz)
+        question_data = []
+        for question in questions:
+            question_data.append({
+                'id': question.id,
+                'question': question.question,
+                'options': question.options,
+                'correct_answer': question.correct_answer
+            })
+        
+        # Prepare the response data
+        quiz_data = {
+            'id': quiz.id,
+            'title': quiz.title,
+            'description': quiz.description,
+            'quiz_type': quiz.quiz_type,
+            'difficulty': quiz.difficulty,
+            'language': quiz.language,
+            'created_at': quiz.created_at,
+            'questions': question_data
+        }
+        
+        return Response(quiz_data)
+    except QuizModel.DoesNotExist:
+        return Response(
+            {"error": "Quiz not found or you don't have permission to access it"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f"Error in get_quiz_detail: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_flashcard_detail(request, flashcard_id):
+    try:
+        # Get the flashcard and ensure it belongs to the current user
+        flashcard = FlashcardModel.objects.get(id=flashcard_id, user=request.user)
+        
+        # Prepare the response data
+        flashcard_data = {
+            'id': flashcard.id,
+            'title': flashcard.title,
+            'front_content': flashcard.front_content,
+            'back_content': flashcard.back_content,
+            'created_at': flashcard.created_at
+        }
+        
+        return Response(flashcard_data)
+    except FlashcardModel.DoesNotExist:
+        return Response(
+            {"error": "Flashcard not found or you don't have permission to access it"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f"Error in get_flashcard_detail: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        ) 

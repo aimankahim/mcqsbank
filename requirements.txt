@@ -154,4 +154,4 @@ yarl
 youtube-transcript-api
 zipp
 zstandard
-https://django-based-mcq-app.onrender.com
+http://127.0.0.1:8000

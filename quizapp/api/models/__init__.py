@@ -1,4 +1,4 @@
-from .quiz_models import Quiz, QuizQuestion, Flashcard, ConciseNote, PDF
-from .youtube_models import YouTubeContent
+from .quiz_models import QuizModel, QuizQuestion, Flashcard, ConciseNote
+from .chat_models import PDFDocument as PDF
 
-__all__ = ['Quiz', 'QuizQuestion', 'Flashcard', 'ConciseNote', 'PDF', 'YouTubeContent'] 
+__all__ = ['QuizModel', 'QuizQuestion', 'Flashcard', 'ConciseNote', 'PDF'] 
