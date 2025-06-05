@@ -56,7 +56,7 @@ function isAxiosError(error: unknown): error is { response?: { data?: { error?: 
 }
 
 class LearningService {
-  private baseURL = 'http://127.0.0.1:8000/api';
+  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
   private async makeRequest<T>(endpoint: string, data: any): Promise<T> {
     try {

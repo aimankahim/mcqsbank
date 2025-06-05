@@ -17,7 +17,7 @@ interface ApiResponse {
 }
 
 class ChatService {
-  private baseURL = 'http://127.0.0.1:8000/api';
+  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
 
   async uploadPDF(file: File): Promise<string> {
     try {

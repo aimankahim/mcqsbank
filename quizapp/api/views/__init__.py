@@ -26,5 +26,5 @@ __all__ = [
     'PDFChatMessageView'
 ] 
 
-# http://127.0.0.1:8000
+# https://django-based-mcq-app.onrender.com
 # https://django-based-mcq-app.onrender.com
