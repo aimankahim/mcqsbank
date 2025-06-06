@@ -70,15 +70,6 @@ interface ActivityData {
   quizzes: number;
 }
 
-interface YouTubeContent {
-  id: string;
-  title: string;
-  created_at: string;
-  video_url: string;
-  content_type: 'quiz' | 'flashcards' | 'notes';
-  thumbnail_url?: string;
-}
-
 interface Quiz {
   id: number;
   title: string;
@@ -119,8 +110,6 @@ const Dashboard: React.FC = () => {
   const [recentFlashcards, setRecentFlashcards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
-  const [youtubeContent, setYoutubeContent] = useState<YouTubeContent[]>([]);
-  const [isLoadingYoutube, setIsLoadingYoutube] = useState(true);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [totalQuizzes, setTotalQuizzes] = useState(0);
@@ -210,40 +199,6 @@ const Dashboard: React.FC = () => {
     };
 
     fetchRecentItems();
-  }, []);
-
-  // Add this new useEffect for fetching YouTube content
-  useEffect(() => {
-    const fetchYouTubeContent = async () => {
-      try {
-        setIsLoadingYoutube(true);
-        const token = authService.getToken();
-        if (!token) {
-          throw new Error('Not authenticated');
-        }
-
-        const response = await api.get('/api/youtube/history/', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.data) {
-          setYoutubeContent(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching YouTube content:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch YouTube content history",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingYoutube(false);
-      }
-    };
-
-    fetchYouTubeContent();
   }, []);
 
   const handleFlashcardClick = (flashcardId: string) => {
@@ -584,7 +539,7 @@ const Dashboard: React.FC = () => {
                           <Brain className="h-4 w-4 text-brand-600" />
                         </div>
                         <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200 truncate max-w-[200px]">
-                          {flashcard.front_content}
+                          {flashcard.front}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2 mt-2">
@@ -686,114 +641,6 @@ const Dashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
-            </div>
-
-            {/* YouTube Content History Section */}
-            <div className="space-y-6">
-              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-200">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-                      <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-bold">YouTube Content</CardTitle>
-                      <CardDescription>Recently created learning materials from YouTube videos</CardDescription>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                    </svg>
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {youtubeContent && Array.isArray(youtubeContent) && youtubeContent.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {youtubeContent.map((content) => (
-                        <div
-                          key={content.id}
-                          className="group relative overflow-hidden rounded-lg border bg-white/50 backdrop-blur-sm p-4 hover:shadow-lg transition-all duration-200"
-                        >
-                          <div className="aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
-                            {content.thumbnail_url ? (
-                              <img
-                                src={content.thumbnail_url}
-                                alt={content.title}
-                                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center bg-gray-100">
-                                <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-500">
-                                {new Date(content.created_at).toLocaleDateString()}
-                              </span>
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                content.content_type === 'quiz'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : content.content_type === 'flashcards'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {content.content_type.charAt(0).toUpperCase() + content.content_type.slice(1)}
-                              </span>
-                            </div>
-                            <h3 className="font-semibold text-gray-900 line-clamp-2">{content.title}</h3>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-xs"
-                                onClick={() => {
-                                  const path = content.content_type === 'quiz' ? '/quizzes' : `/${content.content_type}`;
-                                  navigate(path);
-                                }}
-                              >
-                                View {content.content_type}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-xs"
-                                onClick={() => window.open(content.video_url, '_blank')}
-                              >
-                                Watch Video
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="rounded-full bg-gray-100 p-3">
-                        <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <h3 className="mt-4 text-lg font-semibold text-gray-900">No YouTube content yet</h3>
-                      <p className="mt-2 text-sm text-gray-500">
-                        Create your first learning materials from YouTube videos
-                      </p>
-                      <Button
-                        className="mt-4"
-                        onClick={() => navigate('/youtube')}
-                      >
-                        Create from YouTube
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
