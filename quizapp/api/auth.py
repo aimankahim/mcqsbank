@@ -30,6 +30,22 @@ class UserSerializer(serializers.ModelSerializer):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
+    # Check if username already exists
+    username = request.data.get('username')
+    if User.objects.filter(username=username).exists():
+        return Response(
+            {'error': f'Username "{username}" is already taken. Please choose a different username.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if email already exists
+    email = request.data.get('email')
+    if User.objects.filter(email=email).exists():
+        return Response(
+            {'error': f'Email "{email}" is already registered. Please use a different email.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         user = User.objects.create_user(
@@ -43,25 +59,45 @@ def register_user(request):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         }, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Return validation errors
+    return Response(
+        {'error': 'Invalid data provided', 'details': serializer.errors},
+        status=status.HTTP_400_BAD_REQUEST
+    )
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def check_username(request):
     username = request.data.get('username', '')
+    if not username:
+        return Response(
+            {'error': 'Username is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     exists = User.objects.filter(username=username).exists()
-    return Response({'exists': exists})
+    return Response({
+        'exists': exists,
+        'message': f'Username "{username}" is already taken' if exists else f'Username "{username}" is available'
+    })
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def get_username_by_email(request):
     email = request.data.get('email')
+    if not email:
+        return Response(
+            {'error': 'Email is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     try:
         user = User.objects.get(email=email)
         return Response({'username': user.username})
     except User.DoesNotExist:
         return Response(
-            {'detail': 'No user found with this email'},
+            {'error': 'No account found with this email address. Please check your email or sign up.'},
             status=status.HTTP_404_NOT_FOUND
         )
 
