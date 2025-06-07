@@ -192,7 +192,7 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/flashcards/${id}/`, {
+      const response = await axios.get(`${this.baseURL}/api/learning/flashcards/${id}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
