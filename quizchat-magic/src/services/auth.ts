@@ -80,10 +80,23 @@ class AuthService {
             throw new Error('Invalid response from server');
         } catch (error: any) {
             console.error('Login error:', error.response?.data || error.message);
-            // Create a new error with the proper message
-            const errorMessage = error.response?.data?.detail || 'Invalid email or password';
+            // Create a new error with the proper message from the backend
+            let errorMessage = 'Invalid email or password';
+            
+            if (error.response?.data) {
+                // Check for error message in the response
+                if (error.response.data.error) {
+                    errorMessage = error.response.data.error;
+                } else if (error.response.data.detail) {
+                    errorMessage = error.response.data.detail;
+                } else if (typeof error.response.data === 'object') {
+                    errorMessage = Object.values(error.response.data).join(', ');
+                } else if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
+                }
+            }
+            
             const newError: any = new Error(errorMessage);
-            // Preserve the original error data
             newError.response = error.response;
             throw newError;
         }
@@ -101,7 +114,7 @@ class AuthService {
             });
             
             if (checkResponse.data.exists) {
-                throw new Error(`Username "${username}" is already taken. Please try a different name.`);
+                throw new Error(checkResponse.data.message || `Username "${username}" is already taken. Please try a different name.`);
             }
             
             const response = await axios.post(`${config.API_URL}/api/register/`, {
@@ -122,17 +135,30 @@ class AuthService {
             return response.data;
         } catch (error: any) {
             console.error('Registration error:', error.response?.data || error.message);
+            let errorMessage = 'Failed to create account';
+            
             if (error.response?.data) {
-                const errorData = error.response.data;
-                if (typeof errorData === 'object') {
-                    const errorMessages = Object.entries(errorData)
-                        .map(([key, value]) => `${key}: ${value}`)
-                        .join(', ');
-                    throw new Error(errorMessages);
+                // Check for error message in the response
+                if (error.response.data.error) {
+                    errorMessage = error.response.data.error;
+                } else if (error.response.data.details) {
+                    // Handle validation errors
+                    const details = error.response.data.details;
+                    if (typeof details === 'object') {
+                        errorMessage = Object.entries(details)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join(', ');
+                    }
+                } else if (typeof error.response.data === 'object') {
+                    errorMessage = Object.values(error.response.data).join(', ');
+                } else if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
                 }
-                throw new Error(errorData);
             }
-            throw error;
+            
+            const newError: any = new Error(errorMessage);
+            newError.response = error.response;
+            throw newError;
         }
     }
 
