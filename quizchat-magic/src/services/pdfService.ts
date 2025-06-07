@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
+import { config } from '../config';
 
 export interface PDF {
   id: string;
@@ -17,7 +18,7 @@ const isAxiosError = (error: any): error is { response?: { data?: ApiError } } =
 };
 
 class PDFService {
-  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
+  private baseURL = config.API_URL;
 
   async getPDFs(): Promise<PDF[]> {
     try {

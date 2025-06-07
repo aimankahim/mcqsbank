@@ -154,4 +154,7 @@ yarl
 youtube-transcript-api
 zipp
 zstandard
-# localhost:8000
+# https://django-based-mcq-app.onrender.com
+# https://django-based-mcq-app.onrender.com
+# https://django-based-mcq-app.onrender.com
+# https://django-based-mcq-app.onrender.com

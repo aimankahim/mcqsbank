@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
+import { config } from '../config';
 
 interface PDFInput {
   pdf_id: string;
@@ -56,7 +57,7 @@ function isAxiosError(error: unknown): error is { response?: { data?: { error?: 
 }
 
 class LearningService {
-  private baseURL = 'https://django-based-mcq-app.onrender.com/api';
+  private baseURL = config.API_URL;
 
   private async makeRequest<T>(endpoint: string, data: any): Promise<T> {
     try {

@@ -109,9 +109,9 @@ const Flashcards: React.FC = () => {
     }
   }, [location.search, location.state, pdfs, selectedPdfId, getFlashcardsByPDF, updateFlashcardLastViewed, addFlashCard, toast]);
   
-  // Get flashcards for the selected PDF
+  // Get flashcards for the selected PDF, sorted by most recent first
   const filteredFlashcards = selectedPdfId 
-    ? getFlashcardsByPDF(selectedPdfId)
+    ? getFlashcardsByPDF(selectedPdfId).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     : [];
   
   const handlePdfChange = (pdfId: string) => {
@@ -436,33 +436,32 @@ const Flashcards: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 relative overflow-hidden group">
-                      <CardContent className="p-8">
+              <div className="flex flex-col items-center justify-center space-y-8">
+                <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 relative overflow-hidden group w-full max-w-3xl">
+                  <CardContent className="p-12 min-h-[400px] flex items-center justify-center">
                     <div 
-                          className={`transition-all duration-500 transform perspective-1000 ${
+                      className={`transition-all duration-500 transform perspective-1000 w-full ${
                         isFlipped ? 'rotate-y-180' : ''
                       }`}
                       onClick={handleCardFlip}
                     >
-                          <div className={`${isFlipped ? 'hidden' : 'block'} backface-hidden`}>
-                            <h3 className="text-lg font-medium mb-4 text-brand-600">Front</h3>
-                            <p className="text-xl leading-relaxed">{filteredFlashcards[activeCardIndex].front}</p>
+                      <div className={`${isFlipped ? 'hidden' : 'block'} backface-hidden`}>
+                        <h3 className="text-xl font-medium mb-6 text-brand-600">Front</h3>
+                        <p className="text-2xl leading-relaxed">{filteredFlashcards[activeCardIndex].front}</p>
                       </div>
-                          <div className={`${!isFlipped ? 'hidden' : 'block'} backface-hidden`}>
-                            <h3 className="text-lg font-medium mb-4 text-brand-600">Back</h3>
-                            <p className="text-xl leading-relaxed">{filteredFlashcards[activeCardIndex].back}</p>
+                      <div className={`${!isFlipped ? 'hidden' : 'block'} backface-hidden`}>
+                        <h3 className="text-xl font-medium mb-6 text-brand-600">Back</h3>
+                        <p className="text-2xl leading-relaxed">{filteredFlashcards[activeCardIndex].back}</p>
                       </div>
                     </div>
                   </CardContent>
-                  
                   {!studyMode && (
-                        <CardFooter className="flex justify-end p-4 border-t">
+                    <CardFooter className="flex justify-end p-4 border-t">
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDeleteCard(activeCardIndex)}
-                            className="h-10 hover:bg-red-50 hover:text-red-600"
+                        className="h-10 hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -470,48 +469,44 @@ const Flashcards: React.FC = () => {
                     </CardFooter>
                   )}
                 </Card>
-                
-                    <div className="flex flex-col items-center justify-center space-y-6">
-                      <div className="flex items-center space-x-6">
+                <div className="flex flex-col items-center space-y-6 w-full">
+                  <div className="flex items-center justify-center space-x-8">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={prevCard}
+                      disabled={activeCardIndex === 0}
+                      className="h-20 w-20 rounded-full hover:bg-brand-50 hover:text-brand-600"
+                    >
+                      <ChevronLeft className="h-10 w-10" />
+                    </Button>
+                    <div className="text-center">
+                      <span className="text-3xl font-bold text-brand-600">
+                        {activeCardIndex + 1}
+                      </span>
+                      <span className="text-gray-400 mx-2">/</span>
+                      <span className="text-3xl font-bold text-gray-600">
+                        {filteredFlashcards.length}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={nextCard}
+                      disabled={activeCardIndex === filteredFlashcards.length - 1}
+                      className="h-20 w-20 rounded-full hover:bg-brand-50 hover:text-brand-600"
+                    >
+                      <ChevronRight className="h-10 w-10" />
+                    </Button>
+                  </div>
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={prevCard}
-                    disabled={activeCardIndex === 0}
-                          className="h-16 w-16 rounded-full hover:bg-brand-50 hover:text-brand-600"
+                    onClick={handleCardFlip}
+                    className="h-14 hover:bg-brand-50 hover:text-brand-600"
                   >
-                          <ChevronLeft className="h-8 w-8" />
-                  </Button>
-                  
-                        <div className="text-center">
-                          <span className="text-2xl font-bold text-brand-600">
-                            {activeCardIndex + 1}
-                          </span>
-                          <span className="text-gray-400 mx-2">/</span>
-                          <span className="text-2xl font-bold text-gray-600">
-                            {filteredFlashcards.length}
-                  </span>
-                        </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={nextCard}
-                    disabled={activeCardIndex === filteredFlashcards.length - 1}
-                          className="h-16 w-16 rounded-full hover:bg-brand-50 hover:text-brand-600"
-                  >
-                          <ChevronRight className="h-8 w-8" />
-                        </Button>
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={handleCardFlip}
-                        className="h-12 hover:bg-brand-50 hover:text-brand-600"
-                      >
-                        <Repeat className="h-5 w-5 mr-2" />
-                        Flip Card
+                    <Repeat className="h-6 w-6 mr-2" />
+                    Flip Card
                   </Button>
                 </div>
               </div>

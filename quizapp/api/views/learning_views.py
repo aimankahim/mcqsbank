@@ -643,24 +643,26 @@ def get_quiz_detail(request, quiz_id):
 @permission_classes([IsAuthenticated])
 def get_flashcard_detail(request, flashcard_id):
     try:
-        # Get the flashcard and ensure it belongs to the current user
-        flashcard = FlashcardModel.objects.get(id=flashcard_id, user=request.user)
+        # Get the 5 most recent flashcards for the user
+        recent_flashcards = FlashcardModel.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:5]
         
         # Prepare the response data
         flashcard_data = {
-            'id': flashcard.id,
-            'title': flashcard.title,
-            'front_content': flashcard.front_content,
-            'back_content': flashcard.back_content,
-            'created_at': flashcard.created_at
+            'flashcards': [
+                {
+                    'id': flashcard.id,
+                    'title': flashcard.title,
+                    'front_content': flashcard.front_content,
+                    'back_content': flashcard.back_content,
+                    'created_at': flashcard.created_at
+                }
+                for flashcard in recent_flashcards
+            ]
         }
         
         return Response(flashcard_data)
-    except FlashcardModel.DoesNotExist:
-        return Response(
-            {"error": "Flashcard not found or you don't have permission to access it"},
-            status=status.HTTP_404_NOT_FOUND
-        )
     except Exception as e:
         print(f"Error in get_flashcard_detail: {str(e)}")
         import traceback

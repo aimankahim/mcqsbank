@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { usePDF } from './PDFContext';
+import { learningService } from '../services/learning';
 
 // Types
 type FlashCard = {
@@ -71,11 +72,13 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const { pdfs } = usePDF();
+  const { pdfs, loading: pdfsLoading } = usePDF();
   const { toast } = useToast();
 
   // Load flashcards from localStorage on mount
   useEffect(() => {
+    if (pdfsLoading) return; // Don't load flashcards until PDFs are loaded
+    
     try {
       const savedFlashcards = localStorage.getItem('flashcards');
       if (savedFlashcards) {
@@ -90,7 +93,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Error loading flashcards from localStorage:', error);
       setFlashcards([]);
     }
-  }, []);
+  }, [pdfsLoading]);
 
   // Save flashcards to localStorage whenever they change
   useEffect(() => {
@@ -207,45 +210,34 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const generateQuizFromPDF = async (pdfId: string, numQuestions: number = 5): Promise<Quiz> => {
     try {
       const pdf = pdfs.find(p => p.id === pdfId);
-      if (!pdf) throw new Error("PDF not found");
-      
-      // In a real app, this would use an AI service to generate questions
-      // For now, we'll simulate with dummy data
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const mockQuestions: QuizQuestion[] = Array(numQuestions).fill(0).map((_, i) => ({
-        id: `q-${Date.now()}-${i}`,
-        question: `Sample question ${i + 1} about ${pdf.name}?`,
-        options: [
-          "Sample option A",
-          "Sample option B",
-          "Sample option C", 
-          "Sample option D"
-        ],
-        correctAnswer: "Sample option A"
-      }));
-      
-      const newQuiz = {
-        id: String(Date.now()),
-        pdfId,
-        title: `Quiz on ${pdf.name}`,
-        questions: mockQuestions,
-        createdAt: new Date()
-      };
-      
-      setQuizzes(prev => [...prev, newQuiz]);
-      
-      toast({
-        title: "Quiz generated",
-        description: `A new quiz with ${numQuestions} questions has been created.`,
+      if (!pdf) {
+        throw new Error('PDF not found');
+      }
+
+      const quiz = await learningService.generateQuiz({
+        pdf_id: pdfId,
+        num_items: numQuestions,
+        quiz_type: 'multiple_choice'
       });
-      
+
+      const newQuiz = addQuiz({
+        pdfId,
+        title: `Quiz from ${pdf.title}`,
+        questions: quiz.questions.map(q => ({
+          id: String(Date.now() + Math.random()),
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correct_answer
+        }))
+      });
+
       return newQuiz;
     } catch (error) {
+      console.error('Error generating quiz:', error);
       toast({
-        title: "Failed to generate quiz",
-        description: error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate quiz. Please try again.",
+        variant: "destructive"
       });
       throw error;
     }

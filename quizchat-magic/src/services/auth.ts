@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = 'https://django-based-mcq-app.onrender.com/api';
+import { config } from '../config';
 
 export interface LoginCredentials {
     email: string;
@@ -28,7 +27,7 @@ class AuthService {
 
     async checkUsername(username: string): Promise<boolean> {
         try {
-            const response = await axios.post(`${API_URL}/check-username/`, {
+            const response = await axios.post(`${config.API_URL}/check-username/`, {
                 username: username
             });
             return response.data.exists;
@@ -40,6 +39,7 @@ class AuthService {
 
     async login(credentials: LoginCredentials): Promise<AuthResponse> {
         console.log('Login attempt with:', { email: credentials.email });
+        console.log('Using API URL:', config.API_URL);
         let username = AuthService.storedUsername;
         
         // If we don't have a stored username, try to get it from email
@@ -47,7 +47,7 @@ class AuthService {
             try {
                 console.log('Fetching username for email:', credentials.email);
                 // First try to get the username using email
-                const response = await axios.post(`${API_URL}/get-username/`, {
+                const response = await axios.post(`${config.API_URL}/get-username/`, {
                     email: credentials.email
                 });
                 username = response.data.username;
@@ -61,7 +61,9 @@ class AuthService {
 
         try {
             console.log('Attempting login with username:', username);
-            const response = await axios.post(`${API_URL}/token/`, {
+            const loginUrl = `${config.API_URL}/token/`;
+            console.log('Login URL:', loginUrl);
+            const response = await axios.post(loginUrl, {
                 username: username,
                 password: credentials.password,
             });
@@ -94,7 +96,7 @@ class AuthService {
         
         try {
             // First check if username exists
-            const checkResponse = await axios.post(`${API_URL}/check-username/`, {
+            const checkResponse = await axios.post(`${config.API_URL}/check-username/`, {
                 username: username
             });
             
@@ -102,7 +104,7 @@ class AuthService {
                 throw new Error(`Username "${username}" is already taken. Please try a different name.`);
             }
             
-            const response = await axios.post(`${API_URL}/register/`, {
+            const response = await axios.post(`${config.API_URL}/register/`, {
                 username: username,
                 email: data.email,
                 password: data.password,
@@ -160,7 +162,7 @@ class AuthService {
 
         try {
             console.log('Making refresh token request');
-            const response = await axios.post(`${API_URL}/token/refresh/`, {
+            const response = await axios.post(`${config.API_URL}/token/refresh/`, {
                 refresh,
             });
 

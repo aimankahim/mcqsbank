@@ -445,13 +445,6 @@ const QuizView: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h2 className="text-2xl font-bold">Quiz Results</h2>
-              <Button
-                onClick={generateWordDocument}
-                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-              >
-                <Download className="h-5 w-5" />
-                <span className="font-medium">Download Quiz</span>
-              </Button>
             </div>
             <p className="text-xl mb-6">
               Your score: {calculateScore()}%
@@ -501,11 +494,8 @@ const QuizView: React.FC = () => {
             </div>
 
             <div className="mt-6 flex justify-center">
-              <Button onClick={resetQuiz} className="mr-4">
+              <Button onClick={resetQuiz}>
                 Try Again
-              </Button>
-              <Button onClick={() => navigate('/youtube')} variant="outline">
-                Back to YouTube
               </Button>
             </div>
           </div>

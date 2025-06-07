@@ -172,6 +172,7 @@ const Quizzes: React.FC = () => {
       setQuizState({
         ...quizState,
         showResults: true,
+        currentQuestionIndex: quizState.currentQuestionIndex
       });
     }
   };
@@ -195,6 +196,7 @@ const Quizzes: React.FC = () => {
       currentQuestionIndex: 0,
       answers: new Array(quizState.questions.length).fill(''),
       showResults: false,
+      quiz_type: quizState.quiz_type
     });
   };
 
@@ -476,6 +478,13 @@ const Quizzes: React.FC = () => {
                           <p className="text-3xl font-bold text-brand-600">
                             {calculateScore()} / {quizState.questions.length}
                           </p>
+                          <Button
+                            onClick={resetQuiz}
+                            className="mt-4 h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                          >
+                            <RefreshCw className="h-5 w-5 mr-2" />
+                            Try Again
+                          </Button>
                         </div>
                         <div className="space-y-4">
                           {quizState.questions.map((question, index) => (
