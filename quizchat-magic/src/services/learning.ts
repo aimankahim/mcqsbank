@@ -341,7 +341,7 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/quizzes/${id}/`, {
+      const response = await axios.get(`${this.baseURL}/api/learning/quizzes/${id}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
