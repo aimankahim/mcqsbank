@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://django-based-mcq-app.onrender.com';
+const API_URL = 'https://django-based-mcq-app.onrender.com/api';
 
 // Get the auth token from localStorage
 const getAuthHeaders = () => {
