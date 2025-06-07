@@ -43,13 +43,13 @@ export const PDFProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setLoading(true);
       setError(null);
-      const pdfId = await pdfService.uploadPDF(file);
+      const pdf = await pdfService.uploadPDF(file);
       
       // Immediately refresh the PDFs list
       await refreshPDFs();
       
       // Return the PDF ID for immediate use
-      return pdfId;
+      return pdf.id;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload PDF');
       throw err;
