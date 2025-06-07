@@ -186,6 +186,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
     "https://mcqs-bank-frontend.onrender.com",
+    "https://django-based-mcq-app.onrender.com",
     "http://localhost:3000",  # For local development
     "http://localhost:8080",  # For Vite development server
     "http://127.0.0.1:8080",  # For Vite development server alternative

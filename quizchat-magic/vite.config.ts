@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'http://https://django-based-mcq-app.onrender.com',
+        target: 'https://django-based-mcq-app.onrender.com',
         changeOrigin: true,
         secure: false
       }
