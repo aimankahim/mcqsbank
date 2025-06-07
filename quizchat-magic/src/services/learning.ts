@@ -51,6 +51,18 @@ interface Note {
   created_at: string;
 }
 
+interface LearningActivity {
+  date: string;
+  pdfs: number;
+  flashcards: number;
+  quizzes: number;
+}
+
+interface TotalCounts {
+  total_quizzes: number;
+  total_flashcards: number;
+}
+
 // Type guard for AxiosError
 function isAxiosError(error: unknown): error is { response?: { data?: { error?: string; detail?: string } } } {
   return typeof error === 'object' && error !== null && 'response' in error;
@@ -138,24 +150,14 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/recent-quizzes/`, {
+      const response = await axios.get(`${this.baseURL}/api/learning/recent-quizzes/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      // Transform the response data to match the Quiz interface
-      return response.data.map((quiz: any) => ({
-        id: quiz.id,
-        title: quiz.title,
-        description: quiz.description,
-        quiz_type: quiz.quiz_type,
-        difficulty: quiz.difficulty,
-        language: quiz.language,
-        created_at: quiz.created_at,
-        questions: quiz.questions
-      }));
+      return response.data as Quiz[];
     } catch (error) {
       console.error('Error fetching recent quizzes:', error);
       throw error;
@@ -169,7 +171,7 @@ class LearningService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/recent-flashcards/`, {
+      const response = await axios.get(`${this.baseURL}/api/learning/recent-flashcards/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -290,40 +292,42 @@ class LearningService {
     return this.makeRequest('/notes/', note);
   }
 
-  async getLearningActivity(): Promise<{ date: string; pdfs: number; flashcards: number; quizzes: number }[]> {
+  async getLearningActivity(): Promise<LearningActivity> {
     try {
       const token = authService.getToken();
       if (!token) {
         throw new Error('Authentication required');
       }
-      const response = await axios.get(`${this.baseURL}/learning/activity/`, {
+
+      const response = await axios.get(`${this.baseURL}/api/learning/activity/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      return response.data;
+
+      return response.data as LearningActivity;
     } catch (error) {
       console.error('Error fetching learning activity:', error);
       throw error;
     }
   }
 
-  async getTotalCounts(): Promise<{ total_quizzes: number; total_flashcards: number }> {
+  async getTotalCounts(): Promise<TotalCounts> {
     try {
       const token = authService.getToken();
       if (!token) {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/learning/total-counts/`, {
+      const response = await axios.get(`${this.baseURL}/api/learning/total-counts/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      return response.data;
+      return response.data as TotalCounts;
     } catch (error) {
       console.error('Error fetching total counts:', error);
       throw error;
