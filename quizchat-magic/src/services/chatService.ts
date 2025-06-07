@@ -33,8 +33,8 @@ class ChatService {
 
       const response = await axios.post<ApiResponse>(`${this.baseURL}/pdfs/upload/`, formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -65,16 +65,11 @@ class ChatService {
         throw new Error('Authentication required');
       }
 
-      // Validate PDF ID format
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pdfId)) {
-        throw new Error('Invalid PDF ID format');
-      }
-
       console.log('Sending chat message:', { message, pdfId });
 
       const response = await axios.post(`${this.baseURL}/pdfs/chat/`, {
         message,
-        pdf_id: pdfId
+        pdf_id: pdfId.toString()
       }, {
         headers: {
           'Content-Type': 'application/json',
