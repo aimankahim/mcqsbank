@@ -67,7 +67,7 @@ class ChatService {
 
       console.log('Sending chat message:', { message, pdfId });
 
-      const response = await axios.post(`${this.baseURL}/pdfs/chat/`, {
+      const response = await axios.post(`${this.baseURL}/chat/`, {
         message,
         pdf_id: pdfId.toString()
       }, {
