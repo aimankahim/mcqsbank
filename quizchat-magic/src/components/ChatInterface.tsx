@@ -139,6 +139,11 @@ export default function ChatInterface() {
     setIsTyping(true);
 
     try {
+      // Validate PDF ID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pdfId)) {
+        throw new Error('Invalid PDF ID format');
+      }
+
       const response = await chatService.sendMessage(userMessage, pdfId);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
