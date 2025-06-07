@@ -64,7 +64,16 @@ class PDFService {
         }
       });
 
-      return response.data as PDF;
+      if (!response.data.pdf_id) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Create a PDF object with the response data
+      return {
+        id: response.data.pdf_id,
+        title: file.name,
+        uploaded_at: new Date().toISOString()
+      };
     } catch (error) {
       console.error('Error uploading PDF:', error);
       if (isAxiosError(error)) {
