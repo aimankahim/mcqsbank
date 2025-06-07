@@ -78,7 +78,7 @@ class LearningService {
         throw new Error('Authentication required');
       }
       
-      const response = await axios.post(`${this.baseURL}${endpoint}`, data, {
+      const response = await axios.post(`${this.baseURL}/api${endpoint}`, data, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
