@@ -25,22 +25,34 @@ export default function ChatInterface() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { addPDF, getPDFById, uploadPDF } = usePDF();
+  const { getPDFById, uploadPDF } = usePDF();
 
   // Get PDF ID from URL when component mounts
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const urlPdfId = params.get('pdf');
     if (urlPdfId) {
-      const pdf = getPDFById(urlPdfId);
-      if (pdf) {
-        setPdfId(urlPdfId);
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: 'PDF loaded successfully! You can now ask questions about its content.'
-        }]);
-      } else {
-        // If PDF doesn't exist in context, clear the ID
+      try {
+        // Validate that it's a proper UUID
+        const uuid = urlPdfId.trim();
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
+          throw new Error('Invalid PDF ID format');
+        }
+        
+        const pdf = getPDFById(uuid);
+        if (pdf) {
+          setPdfId(uuid);
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: 'PDF loaded successfully! You can now ask questions about its content.'
+          }]);
+        } else {
+          // If PDF doesn't exist in context, clear the ID
+          setPdfId(null);
+          navigate('/chat', { replace: true });
+        }
+      } catch (error) {
+        console.error('Invalid PDF ID:', error);
         setPdfId(null);
         navigate('/chat', { replace: true });
       }
