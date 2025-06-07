@@ -27,7 +27,7 @@ class AuthService {
 
     async checkUsername(username: string): Promise<boolean> {
         try {
-            const response = await axios.post(`${config.API_URL}/check-username/`, {
+            const response = await axios.post(`${config.API_URL}/api/check-username/`, {
                 username: username
             });
             return response.data.exists;
@@ -96,7 +96,7 @@ class AuthService {
         
         try {
             // First check if username exists
-            const checkResponse = await axios.post(`${config.API_URL}/check-username/`, {
+            const checkResponse = await axios.post(`${config.API_URL}/api/check-username/`, {
                 username: username
             });
             
@@ -104,7 +104,7 @@ class AuthService {
                 throw new Error(`Username "${username}" is already taken. Please try a different name.`);
             }
             
-            const response = await axios.post(`${config.API_URL}/register/`, {
+            const response = await axios.post(`${config.API_URL}/api/register/`, {
                 username: username,
                 email: data.email,
                 password: data.password,
