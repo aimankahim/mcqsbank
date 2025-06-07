@@ -47,7 +47,7 @@ class AuthService {
             try {
                 console.log('Fetching username for email:', credentials.email);
                 // First try to get the username using email
-                const response = await axios.post(`${config.API_URL}/get-username/`, {
+                const response = await axios.post(`${config.API_URL}/api/get-username/`, {
                     email: credentials.email
                 });
                 username = response.data.username;
@@ -61,7 +61,7 @@ class AuthService {
 
         try {
             console.log('Attempting login with username:', username);
-            const loginUrl = `${config.API_URL}/token/`;
+            const loginUrl = `${config.API_URL}/api/token/`;
             console.log('Login URL:', loginUrl);
             const response = await axios.post(loginUrl, {
                 username: username,
