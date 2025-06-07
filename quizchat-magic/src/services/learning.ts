@@ -282,7 +282,7 @@ class LearningService {
   }
 
   async generateNotesFromPDF(request: GenerateNotesRequest): Promise<GenerateNotesResponse> {
-    const response = await axios.post(`${this.baseURL}/pdfs/${request.pdf_id}/notes/`, {});
+    const response = await axios.post(`${this.baseURL}/api/pdfs/${request.pdf_id}/notes/`, {});
     return response.data as GenerateNotesResponse;
   }
 

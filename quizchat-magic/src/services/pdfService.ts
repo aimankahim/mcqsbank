@@ -27,7 +27,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/pdfs/`, {
+      const response = await axios.get(`${this.baseURL}/api/pdfs/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -47,7 +47,7 @@ class PDFService {
     }
   }
 
-  async uploadPDF(file: File): Promise<string> {
+  async uploadPDF(file: File): Promise<PDF> {
     try {
       const token = authService.getToken();
       if (!token) {
@@ -57,19 +57,14 @@ class PDFService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${this.baseURL}/pdfs/upload/`, formData, {
+      const response = await axios.post(`${this.baseURL}/api/pdfs/upload/`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       });
 
-      const data = response.data as { pdf_id: string };
-      if (!data.pdf_id) {
-        throw new Error('Invalid response from server');
-      }
-
-      return data.pdf_id;
+      return response.data as PDF;
     } catch (error) {
       console.error('Error uploading PDF:', error);
       if (isAxiosError(error)) {
@@ -89,7 +84,7 @@ class PDFService {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(`${this.baseURL}/pdfs/${pdfId}/delete/`, {
+      await axios.delete(`${this.baseURL}/api/pdfs/${pdfId}/delete/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -107,29 +102,22 @@ class PDFService {
     }
   }
 
-  async downloadPDF(pdfId: string, title: string): Promise<void> {
+  async downloadPDF(pdfId: string): Promise<Blob> {
     try {
       const token = authService.getToken();
       if (!token) {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${this.baseURL}/pdfs/${pdfId}/download/`, {
+      const response = await axios.get(`${this.baseURL}/api/pdfs/${pdfId}/download/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         responseType: 'blob'
       });
 
-      // Create a URL for the blob
-      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', title);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      return response.data;
     } catch (error) {
       console.error('Error downloading PDF:', error);
       if (isAxiosError(error)) {
