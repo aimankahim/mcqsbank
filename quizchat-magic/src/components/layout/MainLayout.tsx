@@ -50,22 +50,24 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Mobile menu button */}
+      {/* Mobile menu button - only visible on mobile */}
       <div className="lg:hidden fixed top-4 right-4 z-50">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="rounded-full"
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </Button>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar - always visible on desktop, conditionally visible on mobile */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0',
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out',
+          'lg:translate-x-0', // Always visible on desktop
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full' // Mobile behavior
         )}
       >
         <div className="flex flex-col h-full">
@@ -98,7 +100,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   )}
                   onClick={() => {
                     navigate(item.path);
-                    setIsMobileMenuOpen(false);
+                    setIsMobileMenuOpen(false); // Close mobile menu when an item is selected
                   }}
                 >
                   {item.icon}
@@ -120,8 +122,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </div>
       </div>
       
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
+      {/* Main content - adjusted for sidebar width on desktop */}
+      <div className="flex-1 flex flex-col lg:ml-64"> {/* Add margin on desktop */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>
