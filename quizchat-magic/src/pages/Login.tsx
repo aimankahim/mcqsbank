@@ -22,6 +22,7 @@ const Login: React.FC = () => {
   const [showAlert, setShowAlert] = useState<boolean>(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string>(''); // New state for login-specific errors
   
   const { login, signup, clearError, isAuthenticated, error: authError } = useAuth();
   const navigate = useNavigate();
@@ -66,8 +67,10 @@ const Login: React.FC = () => {
       
       if (authError.includes('Invalid credentials')) {
         friendlyError = 'Invalid email or password. Please try again.';
+        setLoginError(friendlyError); // Set login-specific error
       } else if (authError.includes('User not found')) {
         friendlyError = 'No account found with this email address.';
+        setLoginError(friendlyError); // Set login-specific error
       } else if (authError.includes('Email already in use')) {
         friendlyError = 'This email is already registered. Please log in or use a different email.';
       }
@@ -80,6 +83,7 @@ const Login: React.FC = () => {
   // Clear error when switching tabs
   useEffect(() => {
     setError('');
+    setLoginError(''); // Clear login error when switching tabs
     setValidationErrors({});
     setShowAlert(false);
     clearError();
@@ -140,14 +144,14 @@ const Login: React.FC = () => {
     
     // Clear previous errors
     setError('');
+    setLoginError(''); // Clear login error on new submission
     setValidationErrors({});
     setShowAlert(false);
     
     // Validate form based on active tab
     if (activeTab === 'login') {
       if (!email || !password) {
-        setError('Please fill in all fields');
-        setShowAlert(true);
+        setLoginError('Please fill in all fields');
         return;
       }
       
@@ -205,12 +209,19 @@ const Login: React.FC = () => {
       // Handle specific error cases
       if (err.response?.status === 401) {
         errorMessage = 'Invalid email or password';
+        setLoginError(errorMessage); // Set login-specific error
       } else if (err.response?.status === 400) {
         errorMessage = 'Invalid input data. Please check your entries.';
+        if (activeTab === 'login') {
+          setLoginError(errorMessage); // Set login-specific error
+        } else {
+          setError(errorMessage);
+          setShowAlert(true);
+        }
+      } else {
+        setError(errorMessage);
+        setShowAlert(true);
       }
-      
-      setError(errorMessage);
-      setShowAlert(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -234,6 +245,11 @@ const Login: React.FC = () => {
       setError('');
       setShowAlert(false);
       clearError();
+    }
+    
+    // Clear login error if user starts typing
+    if (loginError && value.trim() && activeTab === 'login') {
+      setLoginError('');
     }
   };
 
@@ -296,6 +312,16 @@ const Login: React.FC = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
+                  {/* Login Error Message - Visible only in login tab */}
+                  {loginError && (
+                    <Alert variant="destructive" className="bg-red-50 border-red-200">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-red-700">
+                        {loginError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
