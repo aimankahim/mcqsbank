@@ -20,10 +20,34 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [usernameExists, setUsernameExists] = useState<boolean>(false);
   const [showAlert, setShowAlert] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
   const { login, signup, clearError, isAuthenticated, error: authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Validation functions
+  const validateEmail = (email: string): boolean => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const validatePassword = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 8) {
+      return { valid: false, message: 'Password must be at least 8 characters long' };
+    }
+    if (!/\d/.test(password)) {
+      return { valid: false, message: 'Password must contain at least one number' };
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return { valid: false, message: 'Password must contain at least one special character' };
+    }
+    return { valid: true };
+  };
+
+  const validateName = (name: string): boolean => {
+    return name.length >= 3 && /^[a-zA-Z0-9_]+$/.test(name);
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -36,7 +60,18 @@ const Login: React.FC = () => {
   // Handle auth context errors
   useEffect(() => {
     if (authError) {
-      setError(authError);
+      // Map common auth errors to user-friendly messages
+      let friendlyError = authError;
+      
+      if (authError.includes('Invalid credentials')) {
+        friendlyError = 'Invalid email or password. Please try again.';
+      } else if (authError.includes('User not found')) {
+        friendlyError = 'No account found with this email address.';
+      } else if (authError.includes('Email already in use')) {
+        friendlyError = 'This email is already registered. Please log in or use a different email.';
+      }
+      
+      setError(friendlyError);
       setShowAlert(true);
     }
   }, [authError]);
@@ -44,6 +79,7 @@ const Login: React.FC = () => {
   // Clear error when switching tabs
   useEffect(() => {
     setError('');
+    setValidationErrors({});
     setShowAlert(false);
     clearError();
   }, [activeTab, clearError]);
@@ -53,16 +89,28 @@ const Login: React.FC = () => {
     const checkUsername = async () => {
       if (name.length < 3) {
         setUsernameExists(false);
+        setValidationErrors(prev => ({ ...prev, name: 'Name must be at least 3 characters' }));
         return;
       }
+      
+      if (!validateName(name)) {
+        setUsernameExists(false);
+        setValidationErrors(prev => ({ ...prev, name: 'Name can only contain letters, numbers, and underscores' }));
+        return;
+      }
+      
       try {
         const username = name.toLowerCase().replace(/\s+/g, '');
         const response = await authService.checkUsername(username);
         setUsernameExists(response);
         if (response) {
-          setError(`Username "${username}" is already taken. Please try a different name.`);
+          setValidationErrors(prev => ({ ...prev, name: `Username "${username}" is already taken` }));
         } else {
-          setError('');
+          setValidationErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.name;
+            return newErrors;
+          });
         }
       } catch (err) {
         console.error('Failed to check username:', err);
@@ -89,48 +137,77 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (activeTab === 'signup' && usernameExists) {
-      setError('Please choose a different name');
-      setShowAlert(true);
-      return;
+    // Clear previous errors
+    setError('');
+    setValidationErrors({});
+    setShowAlert(false);
+    
+    // Validate form based on active tab
+    if (activeTab === 'login') {
+      if (!email || !password) {
+        setError('Please fill in all fields');
+        setShowAlert(true);
+        return;
+      }
+      
+      if (!validateEmail(email)) {
+        setValidationErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+        return;
+      }
+    } else {
+      // Signup validation
+      if (!name || !email || !password) {
+        setError('Please fill in all fields');
+        setShowAlert(true);
+        return;
+      }
+      
+      if (!validateName(name)) {
+        setValidationErrors(prev => ({ ...prev, name: 'Name must be at least 3 characters and can only contain letters, numbers, and underscores' }));
+        return;
+      }
+      
+      if (usernameExists) {
+        setError('Please choose a different name');
+        setShowAlert(true);
+        return;
+      }
+      
+      if (!validateEmail(email)) {
+        setValidationErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+        return;
+      }
+      
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        setValidationErrors(prev => ({ ...prev, password: passwordValidation.message }));
+        return;
+      }
     }
     
     setIsSubmitting(true);
-    setError('');
-    setShowAlert(false);
     
     try {
-      console.log('Form submitted:', { activeTab, email });
       if (activeTab === 'login') {
-        try {
-          await login(email, password);
-          // Only navigate if login was successful
-          if (isAuthenticated) {
-            navigate('/');
-          }
-        } catch (loginError: any) {
-          console.error('Login error:', loginError);
-          // Extract the error message from the error object
-          const errorMessage = loginError.response?.data?.detail || loginError.message || 'Invalid email or password';
-          setError(errorMessage);
-          setShowAlert(true);
+        const loginSuccess = await login(email, password);
+        if (loginSuccess) {
+          navigate('/');
         }
       } else {
-        try {
-          await signup(email, password, name);
-          if (isAuthenticated) {
-            navigate('/');
-          }
-        } catch (signupError: any) {
-          console.error('Signup error:', signupError);
-          const errorMessage = signupError.response?.data?.detail || signupError.message || 'Failed to create account';
-          setError(errorMessage);
-          setShowAlert(true);
-        }
+        await signup(email, password, name);
+        navigate('/');
       }
     } catch (err: any) {
       console.error('Form submission error:', err);
-      const errorMessage = err.response?.data?.detail || err.message || 'An unexpected error occurred';
+      let errorMessage = err.response?.data?.detail || err.message || 'An unexpected error occurred';
+      
+      // Handle specific error cases
+      if (err.response?.status === 401) {
+        errorMessage = 'Invalid email or password';
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid input data. Please check your entries.';
+      }
+      
       setError(errorMessage);
       setShowAlert(true);
     } finally {
@@ -139,10 +216,20 @@ const Login: React.FC = () => {
   };
 
   // Clear error when user starts typing
-  const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>, value: string) => {
+  const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>, field: string, value: string) => {
     setter(value);
-    // Only clear error if user has typed something
-    if (value.trim()) {
+    
+    // Clear validation error for this field
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+    
+    // Clear general error if user starts typing
+    if (error && value.trim()) {
       setError('');
       setShowAlert(false);
       clearError();
@@ -215,9 +302,12 @@ const Login: React.FC = () => {
                       type="email"
                       placeholder="your.email@example.com"
                       value={email}
-                      onChange={(e) => handleInputChange(setEmail, e.target.value)}
+                      onChange={(e) => handleInputChange(setEmail, 'email', e.target.value)}
                       required
                     />
+                    {validationErrors.email && (
+                      <p className="text-sm text-red-500">{validationErrors.email}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -232,9 +322,12 @@ const Login: React.FC = () => {
                       type="password"
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => handleInputChange(setPassword, e.target.value)}
+                      onChange={(e) => handleInputChange(setPassword, 'password', e.target.value)}
                       required
                     />
+                    {validationErrors.password && (
+                      <p className="text-sm text-red-500">{validationErrors.password}</p>
+                    )}
                   </div>
                 </CardContent>
                 
@@ -257,14 +350,22 @@ const Login: React.FC = () => {
                 
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
-                      placeholder="John Doe"
+                      placeholder="JohnDoe123"
                       value={name}
-                      onChange={(e) => handleInputChange(setName, e.target.value)}
+                      onChange={(e) => handleInputChange(setName, 'name', e.target.value)}
                       required
                     />
+                    {validationErrors.name && (
+                      <p className="text-sm text-red-500">{validationErrors.name}</p>
+                    )}
+                    {!validationErrors.name && name.length > 0 && (
+                      <p className="text-sm text-green-500">
+                        {usernameExists ? 'Username is taken' : 'Username is available'}
+                      </p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -274,9 +375,12 @@ const Login: React.FC = () => {
                       type="email"
                       placeholder="your.email@example.com"
                       value={email}
-                      onChange={(e) => handleInputChange(setEmail, e.target.value)}
+                      onChange={(e) => handleInputChange(setEmail, 'email', e.target.value)}
                       required
                     />
+                    {validationErrors.email && (
+                      <p className="text-sm text-red-500">{validationErrors.email}</p>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -286,14 +390,33 @@ const Login: React.FC = () => {
                       type="password"
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => handleInputChange(setPassword, e.target.value)}
+                      onChange={(e) => handleInputChange(setPassword, 'password', e.target.value)}
                       required
                     />
+                    {validationErrors.password && (
+                      <p className="text-sm text-red-500">{validationErrors.password}</p>
+                    )}
+                    {password.length > 0 && !validationErrors.password && (
+                      <div className="text-xs text-gray-500">
+                        <p>Password must:</p>
+                        <ul className="list-disc pl-4">
+                          <li className={password.length >= 8 ? 'text-green-500' : ''}>
+                            Be at least 8 characters
+                          </li>
+                          <li className={/\d/.test(password) ? 'text-green-500' : ''}>
+                            Contain at least one number
+                          </li>
+                          <li className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-500' : ''}>
+                            Contain at least one special character
+                          </li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
                 
                 <CardFooter>
-                  <Button className="w-full" type="submit" disabled={isSubmitting}>
+                  <Button className="w-full" type="submit" disabled={isSubmitting || usernameExists}>
                     {isSubmitting ? 'Creating account...' : 'Create account'}
                   </Button>
                 </CardFooter>
