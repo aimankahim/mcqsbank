@@ -52,6 +52,9 @@ export const API_ENDPOINTS = {
   PDF_PROCESS: `${API_BASE_URL}/api/pdfs/process/`,
   PDF_CHAT: `${API_BASE_URL}/api/pdfs/chat/`,
   PDF_HISTORY: `${API_BASE_URL}/api/pdfs/history/`,
+  FORGOT_PASSWORD: `${API_BASE_URL}/api/forgot-password/`,
+  VERIFY_OTP: `${API_BASE_URL}/api/verify-otp/`,
+  RESET_PASSWORD: `${API_BASE_URL}/api/reset-password/`,
 };
 
 export interface QuizResponse {
