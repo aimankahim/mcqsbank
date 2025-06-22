@@ -1,13 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, File } from "lucide-react";
 import { chatService } from '@/services/chatService';
-import { usePDF } from '@/contexts/PDFContext';
+import { pdfService } from '@/services/pdfService';
+import { PDF } from '@/services/pdfService';
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -17,117 +26,107 @@ interface Message {
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [pdfId, setPdfId] = useState<string | null>(null);
+  const [pdfs, setPdfs] = useState<PDF[]>([]);
+  const [isLoadingPDFs, setIsLoadingPDFs] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getPDFById, uploadPDF } = usePDF();
 
-  // Get PDF ID from URL when component mounts
+  // Load PDFs and check URL for initial PDF
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const urlPdfId = params.get('pdf');
-    if (urlPdfId) {
+    const loadPDFs = async () => {
       try {
-        // Validate that it's a proper UUID
-        const uuid = urlPdfId.trim();
-        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
-          throw new Error('Invalid PDF ID format');
-        }
-        
-        const pdf = getPDFById(uuid);
-        if (pdf) {
-          setPdfId(uuid);
-          setMessages(prev => [...prev, {
+        setIsLoadingPDFs(true);
+        const loadedPDFs = await pdfService.getPDFs();
+        setPdfs(loadedPDFs);
+
+        const params = new URLSearchParams(location.search);
+        const urlPdfId = params.get('pdf');
+        if (urlPdfId && loadedPDFs.some(pdf => pdf.id === urlPdfId)) {
+          setPdfId(urlPdfId);
+          setMessages([{
             role: 'assistant',
             content: 'PDF loaded successfully! You can now ask questions about its content.'
           }]);
-        } else {
-          // If PDF doesn't exist in context, clear the ID
-          setPdfId(null);
-          navigate('/chat', { replace: true });
         }
       } catch (error) {
-        console.error('Invalid PDF ID:', error);
-        setPdfId(null);
-        navigate('/chat', { replace: true });
+        console.error('Failed to load PDFs:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your PDF documents",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingPDFs(false);
       }
-    }
-  }, [location, getPDFById, navigate]);
+    };
+
+    loadPDFs();
+  }, [location.search, toast]);
+
+  const handlePDFSelect = (selectedId: string) => {
+    setPdfId(selectedId);
+    window.history.pushState({}, '', `/chat?pdf=${selectedId}`);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: 'PDF changed successfully! You can now ask questions about the new document.'
+    }]);
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     if (!file.type.includes('pdf')) {
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF file",
         variant: "destructive",
       });
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
       return;
     }
-    
-    setSelectedFile(file);
+
     setIsUploading(true);
-    
     try {
-      // Upload PDF using the PDF context's uploadPDF function
-      const chatPdfId = await uploadPDF(file);
-      
-      setPdfId(chatPdfId);
-      
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'PDF uploaded and processed successfully! You can now ask questions about its content.'
-      }]);
-      
+      const newPDF = await pdfService.uploadPDF(file);
+      const updatedPDFs = await pdfService.getPDFs();
+      setPdfs(updatedPDFs);
+      handlePDFSelect(newPDF.id);
       toast({
         title: "Success",
         description: "PDF uploaded and processed successfully",
       });
-
-      // Update URL without full navigation
-      window.history.pushState({}, '', `/chat?pdf=${chatPdfId}`);
-      
     } catch (error) {
-      console.error('Error uploading file:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to upload PDF. Please try again.";
-      
+      console.error('Upload failed:', error);
       toast({
         title: "Upload Failed",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Failed to upload PDF",
         variant: "destructive",
       });
-      
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `Failed to upload PDF: ${errorMessage}`
-      }]);
-      
-      setSelectedFile(null);
-      setPdfId(null);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !pdfId) {
+    if (!input.trim()) {
       toast({
         title: "Error",
-        description: !pdfId ? "Please upload a PDF first" : "Please enter a message",
+        description: "Please enter a message",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!pdfId) {
+      toast({
+        title: "Error",
+        description: "Please select a PDF first",
         variant: "destructive",
       });
       return;
@@ -139,25 +138,18 @@ export default function ChatInterface() {
     setIsTyping(true);
 
     try {
-      // Get the actual PDF ID from the context
-      const pdf = getPDFById(pdfId);
-      if (!pdf) {
-        throw new Error('PDF not found. Please upload a PDF first.');
-      }
-
-      const response = await chatService.sendMessage(userMessage, pdf.id);
+      const response = await chatService.sendMessage(userMessage, pdfId);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to get response. Please try again.";
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Failed to get response",
         variant: "destructive",
       });
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error: ' + errorMessage
+        content: 'Sorry, I encountered an error processing your request.'
       }]);
     } finally {
       setIsTyping(false);
@@ -171,19 +163,19 @@ export default function ChatInterface() {
           <div className="space-y-4">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
-                <Upload className="h-12 w-12 mb-4" />
-                <h3 className="text-lg font-medium mb-2">Upload a PDF to start chatting</h3>
+                <File className="h-12 w-12 mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  {isLoadingPDFs ? 'Loading your documents...' : 'Select a PDF to start chatting'}
+                </h3>
                 <p className="max-w-sm mb-4">
-                  Upload a PDF document and ask questions about its content. I'll help you understand and analyze the document.
+                  Choose from your existing PDFs or upload a new one to ask questions about its content.
                 </p>
               </div>
             ) : (
               messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
@@ -197,12 +189,12 @@ export default function ChatInterface() {
                 </div>
               ))
             )}
-            {(isUploading || isTyping) && (
+            {isTyping && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg p-3 bg-muted">
                   <div className="flex items-center space-x-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{isUploading ? 'Uploading PDF...' : 'AI is typing...'}</span>
+                    <span>Generating response...</span>
                   </div>
                 </div>
               </div>
@@ -213,32 +205,44 @@ export default function ChatInterface() {
 
       <div className="space-y-4">
         <div className="flex items-center gap-2">
+          <Select
+            value={pdfId || ''}
+            onValueChange={handlePDFSelect}
+            disabled={isLoadingPDFs || isUploading}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder={isLoadingPDFs ? "Loading PDFs..." : "Select a PDF"} />
+            </SelectTrigger>
+            <SelectContent>
+              {pdfs.map(pdf => (
+                <SelectItem key={pdf.id} value={pdf.id}>
+                  {pdf.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             type="file"
             accept=".pdf"
             ref={fileInputRef}
             onChange={handleFileUpload}
             className="hidden"
+            disabled={isUploading}
           />
           <Button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
             variant="outline"
-            className="flex-1"
+            size="icon"
+            disabled={isUploading}
           >
             {isUploading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Uploading...
-              </>
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload PDF
-              </>
+              <Upload className="h-4 w-4" />
             )}
           </Button>
         </div>
+
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={input}
@@ -260,4 +264,4 @@ export default function ChatInterface() {
       </div>
     </div>
   );
-} 
+}
