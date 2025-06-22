@@ -157,7 +157,55 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] max-w-4xl mx-auto">
+    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] max-w-4xl mx-auto p-2 md:p-4">
+      {/* PDF Selection and Upload */}
+      <div className="flex flex-col md:flex-row items-center gap-2 mb-4 w-full">
+        <Select
+          value={pdfId || ''}
+          onValueChange={handlePDFSelect}
+          disabled={isLoadingPDFs || isUploading}
+        >
+          <SelectTrigger className="w-full md:flex-1">
+            <SelectValue placeholder={isLoadingPDFs ? "Loading PDFs..." : "Select a PDF"} />
+          </SelectTrigger>
+          <SelectContent>
+            {pdfs.map(pdf => (
+              <SelectItem key={pdf.id} value={pdf.id}>
+                {pdf.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Input
+          type="file"
+          accept=".pdf"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          className="hidden"
+          disabled={isUploading}
+        />
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          variant="outline"
+          className="w-full md:w-auto"
+          disabled={isUploading}
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload PDF
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Chat Messages */}
       <Card className="flex-1 p-4 mb-4 overflow-hidden">
         <ScrollArea className="h-full pr-4">
           <div className="space-y-4">
@@ -178,7 +226,7 @@ export default function ChatInterface() {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
+                    className={`max-w-[90%] md:max-w-[80%] rounded-lg p-3 ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
@@ -191,7 +239,7 @@ export default function ChatInterface() {
             )}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-lg p-3 bg-muted">
+                <div className="max-w-[90%] md:max-w-[80%] rounded-lg p-3 bg-muted">
                   <div className="flex items-center space-x-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Generating response...</span>
@@ -203,65 +251,28 @@ export default function ChatInterface() {
         </ScrollArea>
       </Card>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Select
-            value={pdfId || ''}
-            onValueChange={handlePDFSelect}
-            disabled={isLoadingPDFs || isUploading}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder={isLoadingPDFs ? "Loading PDFs..." : "Select a PDF"} />
-            </SelectTrigger>
-            <SelectContent>
-              {pdfs.map(pdf => (
-                <SelectItem key={pdf.id} value={pdf.id}>
-                  {pdf.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="file"
-            accept=".pdf"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            className="hidden"
-            disabled={isUploading}
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            variant="outline"
-            size="icon"
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            disabled={isTyping || !pdfId}
-          />
-          <Button type="submit" disabled={isTyping || !pdfId}>
-            {isTyping ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Sending...
-              </>
-            ) : (
-              'Send'
-            )}
-          </Button>
-        </form>
-      </div>
+      {/* Message Input */}
+      <form onSubmit={handleSubmit} className="flex gap-2 w-full">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your message..."
+          disabled={isTyping || !pdfId}
+          className="flex-1"
+        />
+        <Button 
+          type="submit" 
+          disabled={isTyping || !pdfId}
+          size="sm"
+          className="h-10"
+        >
+          {isTyping ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            'Send'
+          )}
+        </Button>
+      </form>
     </div>
   );
 }
