@@ -239,4 +239,4 @@ const PDFView: React.FC = () => {
   );
 };
 
-export default PDFView; 
+export default PDFView;
