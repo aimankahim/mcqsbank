@@ -80,41 +80,43 @@ const Upload: React.FC = () => {
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-br from-brand-50 via-purple-50 to-blue-50">
         <div className="container mx-auto px-4 py-8">
-          {/* Hero Section */}
-          <div className="text-center mb-12 space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+          {/* Hero Section - Responsive */}
+          <div className="text-center mb-8 md:mb-12 space-y-2 md:space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
               Upload PDF
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            </h2>
+            <p className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto px-2">
               Upload your PDF document to start learning with AI-powered tools
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto">
-            {/* Header Section */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+            {/* Header Section - Responsive */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 md:p-6 mb-6 md:mb-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                <div className="flex items-center space-x-3 md:space-x-4">
                   <Button
                     variant="ghost"
                     onClick={() => navigate('/pdfs')}
-                    className="h-12 hover:bg-brand-50 hover:text-brand-600"
+                    className="h-10 md:h-12 hover:bg-brand-50 hover:text-brand-600"
+                    size="sm"
                   >
-                    <ArrowLeft className="h-5 w-5 mr-2" />
-                    Back to PDFs
+                    <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                    <span className="hidden sm:inline">Back to PDFs</span>
+                    <span className="sm:hidden">Back</span>
                   </Button>
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-white" />
+                  <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                    <FileText className="h-5 w-5 md:h-6 md:w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Upload Document</h2>
-                    <p className="text-gray-600">Add a new PDF to your library</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900">Upload Document</h3>
+                    <p className="text-sm md:text-base text-gray-600">Add a new PDF to your library</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Upload Area */}
+            {/* Upload Area - Responsive */}
             <Card
               className={`bg-white/80 backdrop-blur-sm shadow-lg border-2 border-dashed transition-all duration-200 ${
                 dragActive 
@@ -126,15 +128,17 @@ const Upload: React.FC = () => {
               onDragOver={handleDrag}
               onDrop={handleDrop}
             >
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <div className={`h-20 w-20 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mb-6 transition-transform duration-200 ${dragActive ? 'scale-110' : ''}`}>
-                  <UploadIcon className="h-10 w-10 text-white" />
+              <CardContent className="flex flex-col items-center justify-center py-12 md:py-16 px-4">
+                <div className={`h-16 w-16 md:h-20 md:w-20 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mb-4 md:mb-6 transition-transform duration-200 ${dragActive ? 'scale-110' : ''}`}>
+                  <UploadIcon className="h-8 w-8 md:h-10 md:w-10 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 text-center">
                   {dragActive ? 'Drop your PDF here' : 'Upload your PDF'}
                 </h3>
-                <p className="text-gray-600 text-center mb-6 max-w-md">
-                  Drag and drop your PDF here, or click the button below to select a file
+                <p className="text-sm md:text-base text-gray-600 text-center mb-4 md:mb-6 max-w-md">
+                  {window.innerWidth < 768 
+                    ? 'Tap to select a PDF file' 
+                    : 'Drag and drop your PDF here, or click the button below to select a file'}
                 </p>
                 <Input
                   ref={fileInputRef}
@@ -147,25 +151,25 @@ const Upload: React.FC = () => {
                   size="lg"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className={`h-12 ${
+                  className={`h-11 md:h-12 ${
                     isUploading
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl'
-                  } transition-all duration-200`}
+                  } transition-all duration-200 w-full sm:w-auto`}
                 >
                   {isUploading ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-b-2 border-white mr-2"></div>
                       Uploading...
                     </>
                   ) : (
                     <>
-                      <FileText className="h-5 w-5 mr-2" />
-                      Select PDF
+                      <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                      {window.innerWidth < 768 ? 'Select PDF' : 'Choose PDF File'}
                     </>
                   )}
                 </Button>
-                <p className="text-sm text-gray-500 mt-4">
+                <p className="text-xs md:text-sm text-gray-500 mt-3 md:mt-4">
                   Supported format: PDF
                 </p>
               </CardContent>
