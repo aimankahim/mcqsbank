@@ -236,7 +236,7 @@ const Flashcards: React.FC = () => {
           {/* Hero Section - Always visible */}
           <div className="text-center mb-6 md:mb-12 space-y-2 md:space-y-4">
             <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-              Smart Flashcards
+              AI-Powered Flashcards
             </h1>
             <p className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto">
               Create and study flashcards with AI-powered content generation
@@ -366,7 +366,7 @@ const Flashcards: React.FC = () => {
                 <CardContent>
                   <form onSubmit={handleNewCardSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Front</Label>
+                      <Label>Question</Label>
                       <Textarea
                         placeholder="Enter the question or prompt"
                         value={newCardFront}
@@ -375,7 +375,7 @@ const Flashcards: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Back</Label>
+                      <Label>Answer</Label>
                       <Textarea
                         placeholder="Enter the answer or explanation"
                         value={newCardBack}
@@ -409,22 +409,7 @@ const Flashcards: React.FC = () => {
                     {studyMode ? 'Exit Study Mode' : 'Study Mode'}
                   </Button>
                   
-                  {filteredFlashcards.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setActiveCardIndex(0);
-                          setIsFlipped(false);
-                        }}
-                        className="h-9 md:h-10 hover:bg-brand-50 hover:text-brand-600"
-                      >
-                        <RefreshCw className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-                        Reset
-                      </Button>
-                    </div>
-                  )}
+
                 </div>
                 
                 {filteredFlashcards.length === 0 ? (
@@ -448,11 +433,11 @@ const Flashcards: React.FC = () => {
                           onClick={handleCardFlip}
                         >
                           <div className={`${isFlipped ? 'hidden' : 'block'} backface-hidden`}>
-                            <h3 className="text-base md:text-lg lg:text-xl font-medium mb-3 md:mb-4 lg:mb-6 text-brand-600">Front</h3>
+                            <h3 className="text-base md:text-lg lg:text-xl font-medium mb-3 md:mb-4 lg:mb-6 text-brand-600">Question</h3>
                             <p className="text-lg md:text-xl lg:text-2xl leading-relaxed">{filteredFlashcards[activeCardIndex].front}</p>
                           </div>
                           <div className={`${!isFlipped ? 'hidden' : 'block'} backface-hidden`}>
-                            <h3 className="text-base md:text-lg lg:text-xl font-medium mb-3 md:mb-4 lg:mb-6 text-brand-600">Back</h3>
+                            <h3 className="text-base md:text-lg lg:text-xl font-medium mb-3 md:mb-4 lg:mb-6 text-brand-600">Answer</h3>
                             <p className="text-lg md:text-xl lg:text-2xl leading-relaxed">{filteredFlashcards[activeCardIndex].back}</p>
                           </div>
                         </div>
