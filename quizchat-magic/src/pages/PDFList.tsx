@@ -60,18 +60,37 @@ const PDFList: React.FC = () => {
     }
   };
 
-  const handleDownload = async (pdfId: string, title: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await pdfService.downloadPDF(pdfId, title);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to download PDF',
-        variant: 'destructive',
-      });
-    }
-  };
+ const handleDownload = async (pdfId: string, title: string, e: React.MouseEvent) => {
+  e.stopPropagation();
+  try {
+    // Get the blob from the service
+    const blob = await pdfService.downloadPDF(pdfId);
+    
+    // Create a download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Set the filename (using the PDF title and ensuring .pdf extension)
+    const filename = title.endsWith('.pdf') ? title : `${title}.pdf`;
+    link.setAttribute('download', filename);
+    
+    // Trigger the download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Download error:', error);
+    toast({
+      title: 'Error',
+      description: error instanceof Error ? error.message : 'Failed to download PDF',
+      variant: 'destructive',
+    });
+  }
+};
 
   return (
     <MainLayout>
