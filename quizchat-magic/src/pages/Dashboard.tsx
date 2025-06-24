@@ -121,7 +121,6 @@ const Dashboard: React.FC = () => {
 
   const recentPdfs = Array.isArray(pdfs) ? pdfs.slice(0, 3) : [];
 
-  // Fetch real activity data for the last 7 days
   useEffect(() => {
     const fetchActivityData = async () => {
       try {
@@ -134,7 +133,6 @@ const Dashboard: React.FC = () => {
     fetchActivityData();
   }, []);
 
-  // Calculate distribution data for pie chart
   const distributionData = [
     { name: 'PDFs', value: pdfs.length },
     { name: 'Flashcards', value: totalFlashcards },
@@ -145,7 +143,6 @@ const Dashboard: React.FC = () => {
     const fetchRecentItems = async () => {
       try {
         setIsLoading(true);
-        console.log('Fetching recent items...');
         
         const [quizzesRes, notesRes, totalCountsRes, flashcardsRes] = await Promise.all([
           learningService.getRecentQuizzes(),
@@ -154,11 +151,6 @@ const Dashboard: React.FC = () => {
           learningService.getRecentFlashcards()
         ]);
 
-        console.log('Quizzes response:', quizzesRes);
-        console.log('Total counts response:', totalCountsRes);
-        console.log('Flashcards response:', flashcardsRes);
-
-        // Transform quiz data to match the expected format
         const transformedQuizzes = quizzesRes.map((quiz: any) => ({
           id: quiz.id,
           title: quiz.title || 'Untitled Quiz',
@@ -169,7 +161,6 @@ const Dashboard: React.FC = () => {
           language: quiz.language || 'English'
         }));
 
-        // Transform flashcard data to match the expected format
         const transformedFlashcards = flashcardsRes.map((fc: any) => ({
           id: fc.id,
           front: fc.front_content,
@@ -184,10 +175,6 @@ const Dashboard: React.FC = () => {
         setRecentFlashcards(transformedFlashcards);
       } catch (error) {
         console.error('Error fetching recent items:', error);
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-          console.error('Error status:', error.response.status);
-        }
         setRecentQuizzes([]);
         setNotes([]);
         setTotalQuizzes(0);
@@ -257,72 +244,75 @@ const Dashboard: React.FC = () => {
   return (
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-br from-brand-50 via-purple-50 to-blue-50">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-6 sm:py-8">
           {/* Hero Section */}
-          <div className="text-center mb-12 space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="text-center mb-8 sm:mb-12 space-y-2 sm:space-y-4">
+            <h1 className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
               Dashboard
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Track your learning progress and access your recent activities
             </p>
           </div>
 
           <div className="max-w-7xl mx-auto">
             {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {/* PDFs Card */}
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-            <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-white" />
+                <CardHeader>
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                      <FileText className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl font-bold text-gray-900">PDFs</CardTitle>
-              <CardDescription>Total PDFs uploaded</CardDescription>
-                    </div>
-                  </div>
-            </CardHeader>
-            <CardContent>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-                    {pdfs.length}
-                  </p>
-            </CardContent>
-          </Card>
-
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-            <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <Brain className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-bold text-gray-900">Flashcards</CardTitle>
-              <CardDescription>Total flashcards created</CardDescription>
-                    </div>
-                  </div>
-            </CardHeader>
-            <CardContent>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-                    {totalFlashcards}
-                  </p>
-            </CardContent>
-          </Card>
-
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-            <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <ScrollText className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-bold text-gray-900">Quizzes</CardTitle>
-              <CardDescription>Total quizzes generated</CardDescription>
+                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">PDFs</CardTitle>
+                      <CardDescription className="text-sm sm:text-base">Total PDFs uploaded</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+                  <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+                    {pdfs.length}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Flashcards Card */}
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+                <CardHeader>
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                      <Brain className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">Flashcards</CardTitle>
+                      <CardDescription className="text-sm sm:text-base">Total flashcards created</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+                    {totalFlashcards}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Quizzes Card */}
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+                <CardHeader>
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                      <ScrollText className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">Quizzes</CardTitle>
+                      <CardDescription className="text-sm sm:text-base">Total quizzes generated</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
                     {totalQuizzes}
                   </p>
                 </CardContent>
@@ -330,22 +320,22 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">
               {/* Activity Chart */}
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <Activity className="h-5 w-5 text-white" />
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                      <Activity className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-bold text-gray-900">Learning Activity</CardTitle>
-                      <CardDescription>Last 7 days activity overview</CardDescription>
+                      <CardTitle className="text-base sm:text-lg font-bold text-gray-900">Learning Activity</CardTitle>
+                      <CardDescription className="text-sm sm:text-base">Last 7 days activity overview</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px]">
+                  <div className="h-[250px] sm:h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={activityData}>
                         <defs>
@@ -385,18 +375,18 @@ const Dashboard: React.FC = () => {
               {/* Distribution Chart */}
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-white" />
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                      <TrendingUp className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-bold text-gray-900">Content Distribution</CardTitle>
-                      <CardDescription>Overview of your learning content</CardDescription>
+                      <CardTitle className="text-base sm:text-lg font-bold text-gray-900">Content Distribution</CardTitle>
+                      <CardDescription className="text-sm sm:text-base">Overview of your learning content</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px]">
+                  <div className="h-[250px] sm:h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -433,39 +423,39 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Recent Items Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Recent PDFs */}
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Recent PDFs */}
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-            <CardHeader>
+                <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-white" />
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                        <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-bold text-gray-900">Recent PDFs</CardTitle>
-              <CardDescription>Your recently uploaded PDFs</CardDescription>
+                        <CardTitle className="text-base sm:text-lg font-bold text-gray-900">Recent PDFs</CardTitle>
+                        <CardDescription className="text-sm sm:text-base">Your recently uploaded PDFs</CardDescription>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => navigate('/upload')}
-                      className="h-8 hover:bg-brand-50 hover:text-brand-600"
+                      className="h-7 sm:h-8 hover:bg-brand-50 hover:text-brand-600"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
                     </Button>
                   </div>
-            </CardHeader>
-            <CardContent>
-              {recentPdfs.length > 0 ? (
+                </CardHeader>
+                <CardContent>
+                  {recentPdfs.length > 0 ? (
                     <div className="space-y-3">
-                  {recentPdfs.map((pdf) => (
-                    <div
-                      key={pdf.id}
+                      {recentPdfs.map((pdf) => (
+                        <div
+                          key={pdf.id}
                           className="flex items-center justify-between p-3 hover:bg-white/50 rounded-lg cursor-pointer transition-all duration-200 group"
-                      onClick={() => navigate(`/pdfs/${pdf.id}`)}
-                    >
+                          onClick={() => navigate(`/pdfs/${pdf.id}`)}
+                        >
                           <div className="flex items-center space-x-3">
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                               <FileText className="h-4 w-4 text-brand-600" />
@@ -473,174 +463,174 @@ const Dashboard: React.FC = () => {
                             <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200">
                               {pdf.title}
                             </span>
-                      </div>
+                          </div>
                           <div className="flex items-center space-x-2">
                             <Clock className="h-4 w-4 text-gray-400" />
                             <span className="text-sm text-gray-500">
-                        {format(new Date(pdf.uploaded_at), 'MMM d, yyyy')}
-                      </span>
+                              {format(new Date(pdf.uploaded_at), 'MMM d, yyyy')}
+                            </span>
                           </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
+                  ) : (
                     <div className="text-center py-6">
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-4">
                         <FileText className="h-6 w-6 text-brand-600" />
                       </div>
                       <p className="text-gray-600 mb-4">No PDFs uploaded yet</p>
-                  <Button
+                      <Button
                         size="lg"
-                    onClick={() => navigate('/upload')}
+                        onClick={() => navigate('/upload')}
                         className="bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
+                      >
                         <Upload className="h-5 w-5 mr-2" />
-                    Upload PDF
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        Upload PDF
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Recent Flashcards */}
+              {/* Recent Flashcards */}
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-            <CardHeader>
+                <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                        <Brain className="h-5 w-5 text-white" />
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                        <Brain className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-bold text-gray-900">Recent Flashcards</CardTitle>
-              <CardDescription>Your recently viewed flashcards</CardDescription>
+                        <CardTitle className="text-base sm:text-lg font-bold text-gray-900">Recent Flashcards</CardTitle>
+                        <CardDescription className="text-sm sm:text-base">Your recently viewed flashcards</CardDescription>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => navigate('/flashcards')}
-                      className="h-8 hover:bg-brand-50 hover:text-brand-600"
+                      className="h-7 sm:h-8 hover:bg-brand-50 hover:text-brand-600"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
                     </Button>
                   </div>
-            </CardHeader>
-            <CardContent>
-              {recentFlashcards.length > 0 ? (
+                </CardHeader>
+                <CardContent>
+                  {recentFlashcards.length > 0 ? (
                     <div className="space-y-4">
-                  {recentFlashcards.map((flashcard) => (
-                    <div
-                      key={flashcard.id}
-                      className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
-                      onClick={() => navigate(`/flashcards/${flashcard.id}`)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                          <Brain className="h-4 w-4 text-brand-600" />
+                      {recentFlashcards.map((flashcard) => (
+                        <div
+                          key={flashcard.id}
+                          className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
+                          onClick={() => navigate(`/flashcards/${flashcard.id}`)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                              <Brain className="h-4 w-4 text-brand-600" />
+                            </div>
+                            <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200 truncate max-w-[200px]">
+                              {flashcard.front}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Clock className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-500">
+                              {format(new Date(flashcard.created_at), 'MMM d, yyyy')}
+                            </span>
+                          </div>
                         </div>
-                        <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200 truncate max-w-[200px]">
-                          {flashcard.front}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-500">
-                          {format(new Date(flashcard.created_at), 'MMM d, yyyy')}
-                        </span>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
+                  ) : (
                     <div className="text-center py-6">
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-4">
                         <Brain className="h-6 w-6 text-brand-600" />
                       </div>
                       <p className="text-gray-600 mb-4">No flashcards viewed yet</p>
-                  <Button
+                      <Button
                         size="lg"
-                    onClick={() => navigate('/flashcards')}
+                        onClick={() => navigate('/flashcards')}
                         className="bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
+                      >
                         <Brain className="h-5 w-5 mr-2" />
-                    Create Flashcards
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        Create Flashcards
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Recent Quizzes */}
+              {/* Recent Quizzes */}
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-            <CardHeader>
+                <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                        <ScrollText className="h-5 w-5 text-white" />
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
+                        <ScrollText className="h-4 sm:h-5 w-4 sm:w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg font-bold text-gray-900">Recent Quizzes</CardTitle>
-              <CardDescription>Your recently generated quizzes</CardDescription>
+                        <CardTitle className="text-base sm:text-lg font-bold text-gray-900">Recent Quizzes</CardTitle>
+                        <CardDescription className="text-sm sm:text-base">Your recently generated quizzes</CardDescription>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => navigate('/quizzes')}
-                      className="h-8 hover:bg-brand-50 hover:text-brand-600"
+                      className="h-7 sm:h-8 hover:bg-brand-50 hover:text-brand-600"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
                     </Button>
                   </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
                     <div className="flex justify-center items-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-                </div>
-              ) : Array.isArray(recentQuizzes) && recentQuizzes.length > 0 ? (
-                    <div className="space-y-3">
-                  {recentQuizzes.map((quiz) => (
-                    <div
-                      key={quiz.id}
-                      className="flex items-center justify-between p-3 hover:bg-white/50 rounded-lg cursor-pointer transition-all duration-200 group"
-                      onClick={() => handleQuizClick(quiz.id)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                          <ScrollText className="h-4 w-4 text-brand-600" />
-                        </div>
-                        <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200">
-                          {quiz.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-500">
-                          {format(new Date(quiz.created_at), 'MMM d, yyyy')}
-                        </span>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
+                  ) : Array.isArray(recentQuizzes) && recentQuizzes.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentQuizzes.map((quiz) => (
+                        <div
+                          key={quiz.id}
+                          className="flex items-center justify-between p-3 hover:bg-white/50 rounded-lg cursor-pointer transition-all duration-200 group"
+                          onClick={() => handleQuizClick(quiz.id)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                              <ScrollText className="h-4 w-4 text-brand-600" />
+                            </div>
+                            <span className="font-medium text-gray-700 group-hover:text-brand-600 transition-colors duration-200">
+                              {quiz.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-500">
+                              {format(new Date(quiz.created_at), 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                     <div className="text-center py-6">
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-4">
                         <ScrollText className="h-6 w-6 text-brand-600" />
                       </div>
                       <p className="text-gray-600 mb-4">No quizzes generated yet</p>
-                  <Button
+                      <Button
                         size="lg"
-                    onClick={() => navigate('/quizzes')}
+                        onClick={() => navigate('/quizzes')}
                         className="bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
+                      >
                         <ScrollText className="h-5 w-5 mr-2" />
-                    Generate Quiz
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        Generate Quiz
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
