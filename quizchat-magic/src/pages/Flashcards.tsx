@@ -55,7 +55,6 @@ const Flashcards: React.FC = () => {
   const [newCardBack, setNewCardBack] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [numFlashcards, setNumFlashcards] = useState<number>(5);
-  const [showNewCardForm, setShowNewCardForm] = useState<boolean>(false);
   
   const { pdfs, isLoading } = usePDF();
   const { flashcards, addFlashCard, deleteFlashCard, getFlashcardsByPDF, updateFlashcardLastViewed } = useLearning();
@@ -113,7 +112,6 @@ const Flashcards: React.FC = () => {
     setSelectedPdfId(pdfId);
     setActiveCardIndex(0);
     setIsFlipped(false);
-    setShowNewCardForm(false);
     
     // Update URL without navigating
     const searchParams = new URLSearchParams(location.search);
@@ -244,158 +242,168 @@ const Flashcards: React.FC = () => {
           </div>
           
           <div className="max-w-6xl mx-auto">
-            {/* Controls Section - Always visible */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 md:p-6 mb-6 md:mb-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center space-x-2 md:space-x-4">
-                  <div className="hidden md:flex h-10 md:h-12 w-10 md:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 items-center justify-center">
-                    <Brain className="h-5 md:h-6 w-5 md:w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-lg md:text-2xl font-bold text-gray-900 truncate">Create Flashcards</h2>
-                    <p className="text-sm md:text-base text-gray-600 truncate">Select a PDF and generate or create flashcards</p>
-                  </div>
+            {/* PDF Selection and Action Buttons - Fixed at the top */}
+            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-4 md:p-6 mb-6">
+              <div className="flex items-center space-x-3 md:space-x-4">
+                {/* Icon Container */}
+                <div className="flex h-10 w-10 md:h-12 md:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 items-center justify-center">
+                  <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
                 </div>
-                
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+        
+                {/* Text Content */}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <h2 className="text-lg md:text-xl font-bold text-gray-900">
+                    Create Flashcards
+                  </h2>
+                  <p className="text-sm md:text-base text-gray-600">
+                    Select a PDF and generate or create flashcards
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+                {/* PDF Selector/Upload Button */}
+                <div className="flex-1 w-full min-w-0">
                   {isLoading ? (
-                    <div className="flex justify-center py-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-500"></div>
+                    <div className="flex justify-center py-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-500" />
                     </div>
                   ) : pdfs.length > 0 ? (
-                    <>
-                      <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
-                        <SelectTrigger className="w-full md:w-[200px] h-10 md:h-12 bg-white/50 backdrop-blur-sm border-2 focus:border-brand-500">
-                          <SelectValue placeholder="Select a PDF" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pdfs.map((pdf) => (
-                            <SelectItem key={pdf.id} value={pdf.id}>
-                              {pdf.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <div className="grid grid-cols-2 md:flex gap-3 md:gap-4">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white text-sm md:text-base">
-                              <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                              Generate
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle className="text-xl md:text-2xl font-bold">Generate Flashcards</DialogTitle>
-                              <DialogDescription className="text-sm md:text-base">
-                                Choose the number of flashcards to generate
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="py-4 md:py-6">
-                              <div className="space-y-2">
-                                <Label className="text-sm md:text-base font-medium">Number of Flashcards</Label>
-                                <Select 
-                                  value={numFlashcards.toString()} 
-                                  onValueChange={(value) => setNumFlashcards(parseInt(value))}
-                                >
-                                  <SelectTrigger className="h-10 md:h-12">
-                                    <SelectValue placeholder="Select number of flashcards" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="5">5 flashcards</SelectItem>
-                                    <SelectItem value="10">10 flashcards</SelectItem>
-                                    <SelectItem value="15">15 flashcards</SelectItem>
-                                    <SelectItem value="20">20 flashcards</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button 
-                                onClick={generateFlashcards}
-                                disabled={isGenerating}
-                                className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600"
-                              >
-                                {isGenerating ? (
-                                  <>
-                                    <RefreshCw className="h-4 w-4 md:h-5 md:w-5 mr-2 animate-spin" />
-                                    Generating...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                                    Generate
-                                  </>
-                                )}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                        
-                        <Button 
-                          onClick={() => setShowNewCardForm(!showNewCardForm)}
-                          className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white text-sm md:text-base"
-                        >
-                          <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                          {showNewCardForm ? 'Hide Form' : 'New Card'}
-                        </Button>
-                      </div>
-                    </>
+                    <Select value={selectedPdfId || ""} onValueChange={handlePdfChange}>
+                      <SelectTrigger className="w-full h-11 md:h-12 bg-white border-2 border-gray-200 hover:border-brand-400 focus:border-brand-500 transition-colors">
+                        <SelectValue placeholder="Select a PDF" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[var(--radix-select-content-available-height)]">
+                        {pdfs.map((pdf) => (
+                          <SelectItem 
+                            key={pdf.id} 
+                            value={pdf.id}
+                            className="text-base hover:bg-brand-50"
+                          >
+                            {pdf.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
-                    <Button 
-                      variant="outline" 
-                      className="h-10 md:h-12 flex items-center space-x-2 border-2 hover:border-brand-500 hover:bg-brand-50"
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 md:h-12 gap-2 border-2 border-gray-200 hover:border-brand-400 hover:bg-brand-50"
                       onClick={() => navigate('/upload')}
                     >
-                      <Upload className="h-4 w-4 md:h-5 md:w-5" />
+                      <Upload className="h-5 w-5" />
                       <span>Upload PDF</span>
                     </Button>
                   )}
                 </div>
+                
+                {pdfs.length > 0 && (
+                  <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white text-sm md:text-base w-full md:w-auto">
+                          <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                          Generate
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl md:text-2xl font-bold">Generate Flashcards</DialogTitle>
+                          <DialogDescription className="text-sm md:text-base">
+                            Choose the number of flashcards to generate
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 md:py-6">
+                          <div className="space-y-2">
+                            <Label className="text-sm md:text-base font-medium">Number of Flashcards</Label>
+                            <Select 
+                              value={numFlashcards.toString()} 
+                              onValueChange={(value) => setNumFlashcards(parseInt(value))}
+                            >
+                              <SelectTrigger className="h-10 md:h-12">
+                                <SelectValue placeholder="Select number of flashcards" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5 flashcards</SelectItem>
+                                <SelectItem value="10">10 flashcards</SelectItem>
+                                <SelectItem value="15">15 flashcards</SelectItem>
+                                <SelectItem value="20">20 flashcards</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button 
+                            onClick={generateFlashcards}
+                            disabled={isGenerating}
+                            className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600"
+                          >
+                            {isGenerating ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 md:h-5 md:w-5 mr-2 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                                Generate
+                              </>
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 text-white text-sm md:text-base w-full md:w-auto">
+                          <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                          New Card
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl md:text-2xl font-bold">Create New Flashcard</DialogTitle>
+                          <DialogDescription className="text-sm md:text-base">
+                            Add a new flashcard to your collection
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleNewCardSubmit} className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label>Question</Label>
+                            <Textarea
+                              placeholder="Enter the question or prompt"
+                              value={newCardFront}
+                              onChange={(e) => setNewCardFront(e.target.value)}
+                              className="min-h-[100px]"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Answer</Label>
+                            <Textarea
+                              placeholder="Enter the answer or explanation"
+                              value={newCardBack}
+                              onChange={(e) => setNewCardBack(e.target.value)}
+                              className="min-h-[100px]"
+                            />
+                          </div>
+                        </form>
+                        <DialogFooter>
+                          <Button 
+                            type="submit"
+                            onClick={handleNewCardSubmit}
+                            className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600"
+                          >
+                            Create Flashcard
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                )}
               </div>
             </div>
             
-            {/* Always visible new flashcard form */}
-            {selectedPdfId && showNewCardForm && (
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 mb-6">
-                <CardHeader>
-                  <CardTitle>Create New Flashcard</CardTitle>
-                  <CardDescription>Add a new flashcard to your collection</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleNewCardSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Question</Label>
-                      <Textarea
-                        placeholder="Enter the question or prompt"
-                        value={newCardFront}
-                        onChange={(e) => setNewCardFront(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Answer</Label>
-                      <Textarea
-                        placeholder="Enter the answer or explanation"
-                        value={newCardBack}
-                        onChange={(e) => setNewCardBack(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                    <div className="flex justify-end">
-                      <Button 
-                        type="submit"
-                        className="h-10 md:h-12 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600"
-                      >
-                        Create Flashcard
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
-            
+            {/* Flashcards Content Area */}
             {selectedPdfId && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -408,8 +416,6 @@ const Flashcards: React.FC = () => {
                     <BookOpen className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                     {studyMode ? 'Exit Study Mode' : 'Study Mode'}
                   </Button>
-                  
-
                 </div>
                 
                 {filteredFlashcards.length === 0 ? (
