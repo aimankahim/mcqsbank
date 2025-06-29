@@ -25,10 +25,12 @@ import {
   Youtube,
   PlayCircle,
   MessageSquare,
-  Loader2
+  Loader2,
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { learningService } from '@/services/learning';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import {
   AreaChart,
   Area,
@@ -40,13 +42,12 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
   Legend
 } from 'recharts';
 import { api } from '@/config/api';
 import { authService } from '@/services/auth';
 import { toast } from '@/components/ui/use-toast';
+import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
 
 interface RecentItem {
   id: string;
@@ -114,12 +115,73 @@ const Dashboard: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [totalQuizzes, setTotalQuizzes] = useState(0);
   const [totalFlashcards, setTotalFlashcards] = useState(0);
+  const [runTour, setRunTour] = useState(false);
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
 
   const computedTotalFlashcards = Array.isArray(pdfs) ? pdfs.reduce((total, pdf) => {
     return total + getFlashcardsByPDF(pdf.id).length;
   }, 0) : 0;
 
   const recentPdfs = Array.isArray(pdfs) ? pdfs.slice(0, 3) : [];
+
+  useEffect(() => {
+    const firstVisit = localStorage.getItem('firstVisit');
+    if (!firstVisit) {
+      setIsFirstTimeUser(true);
+      setRunTour(true);
+      localStorage.setItem('firstVisit', 'false');
+    }
+  }, []);
+
+  const tourSteps: Step[] = [
+    {
+      target: '.stats-section',
+      content: 'Welcome to your learning dashboard! Here you can see your overall progress stats.',
+      placement: 'bottom',
+      disableBeacon: true,
+    },
+    {
+      target: '.activity-chart',
+      content: 'This chart shows your learning activity over time. Track how much you study each day!',
+      placement: 'top',
+    },
+    {
+      target: '.distribution-chart',
+      content: 'See how your learning content is distributed between PDFs, flashcards, and quizzes.',
+      placement: 'top',
+    },
+    {
+      target: '.recent-pdfs',
+      content: 'Your recently uploaded PDFs appear here. Click to view and study them.',
+      placement: 'top',
+    },
+    {
+      target: '.recent-flashcards',
+      content: 'Practice with your recent flashcards here. Spaced repetition helps with memorization!',
+      placement: 'top',
+    },
+    {
+      target: '.recent-quizzes',
+      content: 'Test your knowledge with recently generated quizzes. Try to beat your high scores!',
+      placement: 'top',
+    },
+    {
+      target: '.help-button',
+      content: 'You can always restart this tour by clicking the help button.',
+      placement: 'bottom',
+    }
+  ];
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
+      setRunTour(false);
+    }
+  };
+
+  const restartTour = () => {
+    setRunTour(true);
+  };
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -158,7 +220,7 @@ const Dashboard: React.FC = () => {
           created_at: quiz.created_at,
           quiz_type: quiz.quiz_type || 'multiple_choice',
           difficulty: quiz.difficulty || 'medium',
-          language: quiz.language || 'English'
+          language: quiz.language || 'English,Malay'
         }));
 
         const transformedFlashcards = flashcardsRes.map((fc: any) => ({
@@ -207,32 +269,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getContentTypeIcon = (type: string) => {
-    switch (type) {
-      case 'quiz':
-        return <ScrollText className="h-4 w-4" />;
-      case 'flashcard':
-        return <Brain className="h-4 w-4" />;
-      case 'note':
-        return <BookOpen className="h-4 w-4" />;
-      default:
-        return <PlayCircle className="h-4 w-4" />;
-    }
-  };
-
-  const getContentTypeColor = (type: string) => {
-    switch (type) {
-      case 'quiz':
-        return 'from-blue-500 to-blue-600';
-      case 'flashcard':
-        return 'from-purple-500 to-purple-600';
-      case 'note':
-        return 'from-brand-500 to-brand-600';
-      default:
-        return 'from-gray-500 to-gray-600';
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -244,8 +280,45 @@ const Dashboard: React.FC = () => {
   return (
     <MainLayout>
       <div className="min-h-screen bg-gradient-to-br from-brand-50 via-purple-50 to-blue-50">
+        <Joyride
+          steps={tourSteps}
+          run={runTour}
+          callback={handleJoyrideCallback}
+          continuous={true}
+          scrollToFirstStep={true}
+          showSkipButton={true}
+          styles={{
+            options: {
+              primaryColor: '#8B5CF6',
+              textColor: '#374151',
+              backgroundColor: '#FFFFFF',
+              overlayColor: 'rgba(107, 114, 128, 0.4)',
+              arrowColor: '#FFFFFF',
+            },
+            buttonNext: {
+              backgroundColor: '#8B5CF6',
+              color: '#FFFFFF',
+            },
+            buttonBack: {
+              color: '#8B5CF6',
+            },
+            buttonSkip: {
+              color: '#EF4444',
+            }
+          }}
+        />
+        
         <div className="container mx-auto px-4 py-6 sm:py-8">
-          {/* Hero Section */}
+          <div className="fixed bottom-6 right-6 z-50">
+            <button
+              onClick={restartTour}
+              className="help-button bg-brand-600 hover:bg-brand-700 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-200"
+              aria-label="Help"
+            >
+              <HelpCircle className="h-6 w-6" />
+            </button>
+          </div>
+
           <div className="text-center mb-8 sm:mb-12 space-y-2 sm:space-y-4">
             <h1 className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
               Dashboard
@@ -253,76 +326,86 @@ const Dashboard: React.FC = () => {
             <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Track your learning progress and access your recent activities
             </p>
+            
+            {isFirstTimeUser && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-lg max-w-2xl mx-auto border border-brand-100">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start space-x-3">
+                    <div className="bg-brand-100 p-2 rounded-full">
+                      <HelpCircle className="h-5 w-5 text-brand-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900">Welcome to your learning dashboard!</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        We'll guide you through the main features. Follow the tour to get started.
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsFirstTimeUser(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="max-w-7xl mx-auto">
-            {/* Stats Section */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {/* PDFs Card */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-                <CardHeader>
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <FileText className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">PDFs</CardTitle>
-                      <CardDescription className="text-sm sm:text-base">Total PDFs uploaded</CardDescription>
+            {/* Horizontal Stats Section */}
+            <div className="stats-section mb-6 sm:mb-8">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border-0 overflow-hidden">
+                <div className="grid grid-cols-3 divide-x divide-gray-200">
+                  {/* PDFs Card */}
+                  <div className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mb-3">
+                        <FileText className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">PDFs</h3>
+                      <p className="text-sm text-gray-600 mb-3">Total Uploaded</p>
+                      <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+                        {pdfs.length}
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-                    {pdfs.length}
-                  </p>
-                </CardContent>
-              </Card>
 
-              {/* Flashcards Card */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-                <CardHeader>
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <Brain className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">Flashcards</CardTitle>
-                      <CardDescription className="text-sm sm:text-base">Total flashcards created</CardDescription>
+                  {/* Flashcards Card */}
+                  <div className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mb-3">
+                        <Brain className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Flashcards</h3>
+                      <p className="text-sm text-gray-600 mb-3">Total Created</p>
+                      <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+                        {totalFlashcards}
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-                    {totalFlashcards}
-                  </p>
-                </CardContent>
-              </Card>
 
-              {/* Quizzes Card */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
-                <CardHeader>
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
-                      <ScrollText className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">Quizzes</CardTitle>
-                      <CardDescription className="text-sm sm:text-base">Total quizzes generated</CardDescription>
+                  {/* Quizzes Card */}
+                  <div className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mb-3">
+                        <ScrollText className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Quizzes</h3>
+                      <p className="text-sm text-gray-600 mb-3">Total Generated</p>
+                      <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
+                        {totalQuizzes}
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-brand-600 to-purple-600 bg-clip-text text-transparent">
-                    {totalQuizzes}
-                  </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">
               {/* Activity Chart */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+              <Card className="activity-chart bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
@@ -373,7 +456,7 @@ const Dashboard: React.FC = () => {
               </Card>
 
               {/* Distribution Chart */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+              <Card className="distribution-chart bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center">
@@ -425,7 +508,7 @@ const Dashboard: React.FC = () => {
             {/* Recent Items Section */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {/* Recent PDFs */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+              <Card className="recent-pdfs bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 sm:space-x-4">
@@ -493,7 +576,7 @@ const Dashboard: React.FC = () => {
               </Card>
 
               {/* Recent Flashcards */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+              <Card className="recent-flashcards bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 sm:space-x-4">
@@ -561,7 +644,7 @@ const Dashboard: React.FC = () => {
               </Card>
 
               {/* Recent Quizzes */}
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+              <Card className="recent-quizzes bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 sm:space-x-4">
