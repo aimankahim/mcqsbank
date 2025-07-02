@@ -402,9 +402,9 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {/* Activity Chart */}
+            {/* Charts Section - Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {/* Activity Chart - Left Side */}
               <Card className="activity-chart bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center space-x-3 sm:space-x-4">
@@ -455,7 +455,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Distribution Chart */}
+              {/* Distribution Chart - Right Side */}
               <Card className="distribution-chart bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-200">
                 <CardHeader>
                   <div className="flex items-center space-x-3 sm:space-x-4">
